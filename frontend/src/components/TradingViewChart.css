@@ -1,0 +1,67 @@
+.tradingview-chart-container {
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #333333;
+}
+
+.tradingview-chart {
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Loading state */
+.tradingview-chart-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background-color: #1e1e1e;
+  color: #a0a0a0;
+  font-size: 1.2rem;
+}
+
+/* Error state */
+.tradingview-chart-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background-color: #1e1e1e;
+  color: #ea3943;
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Controls for the chart */
+.tradingview-chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.tradingview-chart-controls select {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tradingview-chart-controls select:focus {
+  outline: none;
+  border-color: #61dafb;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tradingview-chart {
+    height: 300px !important;
+  }
+}

@@ -1,0 +1,328 @@
+.crypto-data-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #ffffff;
+}
+
+.coin-selector {
+  display: flex;
+  align-items: center;
+}
+
+.coin-selector label {
+  margin-right: 10px;
+  color: #a0a0a0;
+}
+
+.coin-selector select {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-section {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: #e0e0e0;
+  border: 1px solid #333333;
+}
+
+.dashboard-section h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Coin Insights Section */
+.coin-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.coin-icon {
+  width: 50px;
+  height: 50px;
+  background-color: #f7931a; /* Bitcoin color, would be dynamic based on coin */
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.coin-name-price h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #ffffff;
+}
+
+.coin-symbol {
+  color: #a0a0a0;
+  font-weight: normal;
+}
+
+.coin-price {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.coin-metrics, .fundamental-analysis {
+  margin-bottom: 20px;
+}
+
+.fundamental-analysis h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #ffffff;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.metric-label {
+  color: #a0a0a0;
+}
+
+.metric-value {
+  font-weight: 600;
+}
+
+/* Technical Analysis Section */
+.chart-tabs {
+  display: flex;
+  margin-bottom: 15px;
+}
+
+.chart-tab {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 1rem;
+  border-bottom: 2px solid transparent;
+}
+
+.chart-tab.active {
+  color: #ffffff;
+  border-bottom: 2px solid #61dafb;
+}
+
+/* Price Variation Section */
+.price-alerts {
+  margin-top: 15px;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: rgba(22, 199, 132, 0.1);
+  margin-bottom: 10px;
+}
+
+.alert.positive {
+  background-color: rgba(22, 199, 132, 0.1);
+}
+
+.alert.negative {
+  background-color: rgba(234, 57, 67, 0.1);
+}
+
+.alert-value {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.alert.positive .alert-value {
+  color: #16c784;
+}
+
+.alert.negative .alert-value {
+  color: #ea3943;
+}
+
+/* Day Trading Insights Section */
+.trading-insights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.trading-insight {
+  display: flex;
+  flex-direction: column;
+}
+
+.insight-label {
+  color: #a0a0a0;
+  margin-bottom: 5px;
+}
+
+.insight-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.bearish {
+  color: #ea3943;
+}
+
+.bullish {
+  color: #16c784;
+}
+
+/* News Section */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.news-item {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333333;
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-item h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.news-item h3 a {
+  color: #e0e0e0;
+  text-decoration: none;
+}
+
+.news-item h3 a:hover {
+  color: #61dafb;
+}
+
+.news-meta {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.news-currencies {
+  font-size: 0.9rem;
+  color: #61dafb;
+}
+
+/* Crypto Table Section */
+.crypto-table-section {
+  grid-column: span 2;
+}
+
+.crypto-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crypto-table th, .crypto-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #333333;
+}
+
+.crypto-table th {
+  color: #a0a0a0;
+  font-weight: 600;
+}
+
+.crypto-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.crypto-table a {
+  color: #e0e0e0;
+  text-decoration: none;
+}
+
+.crypto-table a:hover {
+  color: #61dafb;
+}
+
+/* Utility Classes */
+.positive {
+  color: #16c784;
+}
+
+.negative {
+  color: #ea3943;
+}
+
+.error {
+  color: #ea3943;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .crypto-table-section {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .coin-selector {
+    margin-top: 10px;
+    width: 100%;
+  }
+  
+  .coin-selector select {
+    width: 100%;
+  }
+  
+  .trading-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,211 @@
+/* General Styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Light Theme */
+.light-theme {
+  background-color: #ffffff;
+  color: #1a1a1a;
+}
+
+.light-theme .app-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.light-theme .app-header .logo {
+  color: #007bff;
+}
+
+.light-theme .app-header nav a {
+  color: #333;
+}
+
+.light-theme .app-header nav a:hover {
+  color: #007bff;
+}
+
+.light-theme .user-controls input[type="search"] {
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+}
+
+.light-theme .user-controls button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+}
+
+.light-theme .main-content {
+  background-color: #ffffff;
+}
+
+.light-theme .dashboard-section {
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.light-theme .app-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  color: #555;
+}
+
+.light-theme .app-footer a {
+  color: #007bff;
+}
+
+/* Dark Theme */
+.dark-theme {
+  background-color: #121212; /* A common dark background */
+  color: #e0e0e0; /* Light grey text for readability */
+}
+
+.dark-theme .app-header {
+  background-color: #1e1e1e; /* Slightly lighter dark for header */
+  border-bottom: 1px solid #333333;
+}
+
+.dark-theme .app-header .logo {
+  color: #61dafb; /* A bright color for logo, like React's blue */
+}
+
+.dark-theme .app-header nav a {
+  color: #c0c0c0; /* Lighter grey for nav links */
+}
+
+.dark-theme .app-header nav a:hover {
+  color: #61dafb;
+}
+
+.dark-theme .user-controls input[type="search"] {
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.dark-theme .user-controls button {
+  background-color: #61dafb;
+  color: #121212;
+  border: none;
+}
+
+.dark-theme .main-content {
+  background-color: #121212;
+}
+
+.dark-theme .dashboard-section {
+  background-color: #1e1e1e;
+  border: 1px solid #333333;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  color: #e0e0e0;
+}
+
+.dark-theme .app-footer {
+  background-color: #1e1e1e;
+  border-top: 1px solid #333333;
+  color: #a0a0a0; /* Medium grey for footer text */
+}
+
+.dark-theme .app-footer a {
+  color: #61dafb;
+}
+
+/* Header Styles */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.app-header .logo {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.app-header nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.user-controls {
+  display: flex;
+  align-items: center;
+}
+
+.user-controls input[type="search"] {
+  padding: 8px;
+  border-radius: 4px;
+  margin-left: 10px;
+}
+
+.user-controls button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+/* Main Content Styles */
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+/* Footer Styles */
+.app-footer {
+  padding: 15px 20px;
+  text-align: center;
+}
+
+.app-footer .feedback-link a {
+  text-decoration: none;
+}
+
+/* Responsive Design (Basic Example) */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+  }
+  .app-header nav {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .app-header nav a {
+    margin: 5px;
+  }
+  .user-controls {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .user-controls input[type="search"] {
+    flex-grow: 1;
+    margin-left: 0;
+  }
+}
+

@@ -1,0 +1,136 @@
+.risk-assessment-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.risk-factors-section,
+.market-trend-section,
+.fear-greed-section {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  color: #e0e0e0;
+  border: 1px solid #333333;
+}
+
+.fear-greed-section {
+  grid-column: span 2;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.risk-factors-content,
+.market-trend-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.risk-factor,
+.trend-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-label,
+.trend-label {
+  font-size: 1rem;
+  color: #a0a0a0;
+}
+
+.risk-value,
+.trend-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.trend-overall {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.trend-overall .trend-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Fear & Greed Index styling */
+.fear-greed-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.fear-greed-meter {
+  text-align: center;
+}
+
+.fear-greed-value {
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.fear-greed-label {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.fear-greed-scale {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.scale-marker {
+  font-size: 0.8rem;
+  text-align: center;
+  flex: 1;
+}
+
+.extreme-fear {
+  color: #ea3943;
+}
+
+.fear {
+  color: #ff9800;
+}
+
+.neutral {
+  color: #ffeb3b;
+}
+
+.greed {
+  color: #4caf50;
+}
+
+.extreme-greed {
+  color: #16c784;
+}
+
+/* Loading and error states */
+.error {
+  color: #ea3943;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .risk-assessment-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .fear-greed-section {
+    grid-column: span 1;
+  }
+}
