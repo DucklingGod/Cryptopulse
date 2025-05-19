@@ -78,7 +78,10 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
 def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
     # Always use absolute path for Bitstamp_BTCUSD_d.csv for BTC_USD
     if symbol == "BTC_USD":
-        data_path = "/app/data/Bitstamp_BTCUSD_d.csv"
+        # Use Docker path if running in Docker, else use local path
+        docker_path = "/app/data/Bitstamp_BTCUSD_d.csv"
+        local_path = os.path.join(DATA_DIR, "Bitstamp_BTCUSD_d.csv")
+        data_path = docker_path if os.path.exists(docker_path) else local_path
     else:
         data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
     print(f"[DEBUG] Loading data from: {data_path}")
@@ -146,14 +149,14 @@ def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
         callbacks=[early_stopping, reduce_lr]
     )
     os.makedirs(MODEL_DIR, exist_ok=True)
-    model.save(os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras"))
+    model.save(os.path.join(MODEL_DIR, f"lstm_model_{symbol}.h5"))
     np.save(os.path.join(MODEL_DIR, f"scaler_{symbol}.npy"), scaler.min_, allow_pickle=True)
     np.save(os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy"), scaler.scale_, allow_pickle=True)
     return model, scaler, history
 
 # --- Prediction with MC Dropout ---
 def predict_price(symbol="BTC_USD", sequence_length=60, mc_dropout_passes=30):
-    model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
+    model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.h5")
     scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
     scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
     print(f"[DEBUG] Loading model from: {model_path}")
