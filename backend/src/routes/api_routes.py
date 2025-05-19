@@ -2,9 +2,17 @@ from flask import Blueprint, jsonify, request
 import requests
 import os
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import nltk
+
 # Import from mock ML model instead of the real one
 from src.mock_ml_model import predict_price
 import traceback
+
+# Download VADER lexicon if not already present
+try:
+    nltk.data.find('sentiment/vader_lexicon.zip')
+except LookupError:
+    nltk.download('vader_lexicon')
 
 api_bp = Blueprint("api_bp", __name__, url_prefix="/api")
 fundamental_bp = Blueprint('fundamental', __name__)
