@@ -13,8 +13,8 @@ from src.routes.api_routes import fundamental_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
-# TEMP: Allow all origins and headers for debugging CORS
-CORS(app, origins="*", allow_headers="*", expose_headers="*", supports_credentials=False)
+# Simplest CORS: allow all origins by default
+CORS(app)
 
 # Register blueprints
 # app.register_blueprint(user_bp, url_prefix='/api') # Keep or remove if not used
