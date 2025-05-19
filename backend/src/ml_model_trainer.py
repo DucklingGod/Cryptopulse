@@ -5,10 +5,16 @@ from tensorflow.keras.models import Sequential, load_model # Added load_model
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import os
+from dotenv import load_dotenv
 
-# Define the path to the prepared data
-DATA_DIR = "/home/ubuntu/crypto_dashboard/backend/data"
-MODEL_DIR = "/home/ubuntu/crypto_dashboard/backend/models"
+load_dotenv()
+
+# Define directories using environment variables or default relative paths
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "../data"))
+MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(os.path.dirname(__file__), "../models"))
+
+# Use environment variable for API key
+ALPHAVANTAGE_API_KEY = os.environ.get("ALPHAVANTAGE_API_KEY")
 
 # Ensure model directory exists
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -114,12 +120,16 @@ def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
 
     model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
     model.save(model_path)
-    print(f"Model saved to {model_path}")
+    np.save(os.path.join(MODEL_DIR, f"scaler_{symbol}.npy"), scaler.min_, allow_pickle=True)
+    np.save(os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy"), scaler.scale_, allow_pickle=True)
+    print(f"Model and scaler saved to {model_path}")
     return model, scaler, history
 
+# --- Prediction with MC Dropout ---
 def predict_price(symbol="BTC_USD", sequence_length=60):
-    """Loads a trained model and predicts the next price point."""
     model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
+    scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
+    scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
     if not os.path.exists(model_path):
         print(f"Model file not found: {model_path}. Train the model first.")
         print("Attempting to train the model now...")
@@ -127,31 +137,23 @@ def predict_price(symbol="BTC_USD", sequence_length=60):
         if not os.path.exists(model_path):
             print("Failed to train and find model. Cannot predict.")
             return None
-
     model = load_model(model_path)
-    
     _, _, _, X_pred_sequence, scaler, last_sequence_df = load_and_preprocess_data(
         symbol=symbol,
         sequence_length=sequence_length,
         for_prediction=True,
         last_n_rows_for_pred=sequence_length
     )
-
     if X_pred_sequence is None or scaler is None or last_sequence_df is None:
         print("Failed to load or preprocess data for prediction.")
         return None
-
     predicted_scaled_price = model.predict(X_pred_sequence)
-    
     num_features = scaler.n_features_in_
     dummy_array = np.zeros((len(predicted_scaled_price), num_features))
     dummy_array[:, 0] = predicted_scaled_price.ravel()
-    
     predicted_price = scaler.inverse_transform(dummy_array)[:, 0]
-    
     last_actual_price = last_sequence_df["close"].iloc[-1]
     trend = "bullish" if predicted_price[0] > last_actual_price else "bearish" if predicted_price[0] < last_actual_price else "neutral"
-    
     return {"predicted_next_close": float(predicted_price[0]), "trend": trend, "last_actual_close": float(last_actual_price)}
 
 if __name__ == "__main__":

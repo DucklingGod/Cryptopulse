@@ -3,9 +3,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import ta
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Base URL for our own backend API
-BACKEND_API_BASE_URL = "http://127.0.0.1:5000/api"
+BACKEND_API_BASE_URL = os.environ.get("BACKEND_API_BASE_URL", "http://127.0.0.1:5000/api")
 
 def fetch_historical_prices(symbol="BTC/USD", interval="1day", outputsize="365"):
     """Fetches historical price data from our backend API."""
@@ -172,10 +176,11 @@ def prepare_ml_data(symbol="BTC/USD", price_interval="1day", price_outputsize="3
     combined_df.dropna(inplace=True)
     print("DataFrame head after feature engineering and dropna:")
     print(combined_df.head())
-    output_filename = f"/home/ubuntu/crypto_dashboard/backend/data/ml_prepared_data_{symbol.replace('/', '_')}.csv"
+    # Use environment variable or default relative path for data directory
+    DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "../data"))
+    os.makedirs(DATA_DIR, exist_ok=True)
+    output_filename = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol.replace('/', '_')}.csv")
     try:
-        import os
-        os.makedirs("/home/ubuntu/crypto_dashboard/backend/data", exist_ok=True)
         combined_df.to_csv(output_filename)
         print(f"Prepared data saved to {output_filename}")
     except Exception as e:

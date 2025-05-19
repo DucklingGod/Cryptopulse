@@ -14,6 +14,7 @@ How to use:
 """
 
 import os
+from dotenv import load_dotenv
 import json
 import random
 from datetime import datetime, timedelta
@@ -23,11 +24,15 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow import keras
 import requests
 
-# Define directories
-MODEL_DIR = os.path.join(os.path.dirname(__file__), '../models')
-DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
+# Load environment variables from .env file
+load_dotenv()
 
-ALPHAVANTAGE_API_KEY = "OFFA5DMQEMQY5O2P"
+# Define directories using environment variables or default relative paths
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "../data"))
+MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(os.path.dirname(__file__), "../models"))
+
+# Use environment variable for API key
+ALPHAVANTAGE_API_KEY = os.environ.get("ALPHAVANTAGE_API_KEY")
 
 # --- Alpha Vantage Data Fetching ---
 def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full"):
