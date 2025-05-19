@@ -9,12 +9,15 @@ RUN apt-get update && apt-get install -y build-essential gcc
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy data and models folders for ML model and data access
+# Copy the rest of your code
+COPY . .
+
+# Copy data and models folders for ML model and data access (these will overwrite any empty/incorrect ones from above)
 COPY backend/data/ ./data/
 COPY backend/models/ ./models/
 
-# Copy the rest of your code
-COPY . .
+# Debug: list model files
+RUN ls -lh ./models/
 
 # Expose port (Cloud Run uses $PORT)
 EXPOSE 8080
