@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, send_from_directory
+from flask_cors import CORS
 from src.models.user import db # This might be unused if not using user model yet
 from src.routes.user import user_bp # This might be unused if not using user routes yet
 from src.routes.api_routes import api_bp # Import the new API blueprint
@@ -12,6 +13,7 @@ from src.routes.api_routes import fundamental_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+CORS(app)
 
 # Register blueprints
 # app.register_blueprint(user_bp, url_prefix='/api') # Keep or remove if not used
