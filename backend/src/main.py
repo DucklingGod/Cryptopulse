@@ -45,6 +45,10 @@ def serve(path):
         else:
             return "index.html not found", 404
 
+@app.route('/cors-test')
+def cors_test():
+    return {"msg": "CORS test"}
+
 
 if __name__ == '__main__':
     # Only use app.run for local development
