@@ -6,6 +6,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from src.mock_ml_model import predict_price
 
 api_bp = Blueprint("api_bp", __name__, url_prefix="/api")
+fundamental_bp = Blueprint('fundamental', __name__)
 
 # Initialize Sentiment Analyzer
 sia = SentimentIntensityAnalyzer()
@@ -109,5 +110,124 @@ def get_ml_trend_prediction():
     except Exception as e:
         print(f"Error during ML prediction: {e}") # Log to server console
         return jsonify({"error": f"An internal error occurred during prediction: {str(e)}"}), 500
+
+@fundamental_bp.route('/fundamental/<symbol>', methods=['GET'])
+def get_fundamental_data(symbol):
+    """
+    Fetch fundamental data for a coin from CoinMarketCap and calculate ROI (since beginning, 1 year, 90 days).
+    symbol: e.g. 'BTC', 'ETH', 'SOL'
+    """
+    try:
+        # Fetch CMC listings (limit 100 for now)
+        headers = {
+            "Accepts": "application/json",
+            "X-CMC_PRO_API_KEY": CMC_API_KEY,
+        }
+        response = requests.get(f"{CMC_BASE_URL}/listings/latest", headers=headers, params={"limit": 100, "convert": "USD"})
+        response.raise_for_status()
+        listings = response.json().get('data', [])
+        coin = next((c for c in listings if c['symbol'].upper() == symbol.upper()), None)
+        if not coin:
+            return jsonify({"error": f"Coin {symbol} not found in CMC listings."}), 404
+        # Get historical prices for ROI
+        # Use Twelvedata for historical price (since CMC doesn't provide historical price in free tier)
+        def get_price_n_days_ago(symbol, days):
+            td_symbol = f"{symbol.upper()}/USD"
+            params = {
+                "symbol": td_symbol,
+                "interval": "1day",
+                "apikey": TWELVEDATA_API_KEY,
+                "outputsize": max(days+1, 2)
+            }
+            resp = requests.get(f"{TWELVEDATA_BASE_URL}/time_series", params=params)
+            if resp.status_code != 200:
+                return None
+            data = resp.json().get('values', [])
+            if not data or len(data) <= days:
+                return None
+            # values are in reverse chronological order (latest first)
+            return float(data[days]['close'])
+        try:
+            current_price = float(coin['quote']['USD']['price'])
+        except Exception:
+            current_price = None
+        price_1y_ago = get_price_n_days_ago(symbol, 365)
+        price_90d_ago = get_price_n_days_ago(symbol, 90)
+        price_beginning = None
+        # Try to get the oldest price available
+        td_symbol = f"{symbol.upper()}/USD"
+        params = {"symbol": td_symbol, "interval": "1day", "apikey": TWELVEDATA_API_KEY, "outputsize": 5000}
+        resp = requests.get(f"{TWELVEDATA_BASE_URL}/time_series", params=params)
+        if resp.status_code == 200:
+            values = resp.json().get('values', [])
+            if values:
+                price_beginning = float(values[-1]['close'])
+        def calc_roi(cur, old):
+            if cur is None or old is None or old == 0:
+                return None
+            return ((cur - old) / old) * 100
+        roi_since_beginning = calc_roi(current_price, price_beginning)
+        roi_1y = calc_roi(current_price, price_1y_ago)
+        roi_90d = calc_roi(current_price, price_90d_ago)
+        # Add ATH/ATL from CoinGecko
+        try:
+            symbol_map = {
+                'BTC': 'bitcoin',
+                'ETH': 'ethereum',
+                'SOL': 'solana',
+                # Add more as needed
+            }
+            coingecko_id = symbol_map.get(symbol.upper(), symbol.lower())
+            cg_url = f'https://api.coingecko.com/api/v3/coins/{coingecko_id}'
+            cg_resp = requests.get(cg_url, params={"localization": "false", "tickers": "false", "market_data": "true", "community_data": "false", "developer_data": "false", "sparkline": "false"})
+            ath = atl = None
+            if cg_resp.status_code == 200:
+                cg_data = cg_resp.json()
+                market_data = cg_data.get('market_data', {})
+                ath = market_data.get('ath', {}).get('usd')
+                atl = market_data.get('atl', {}).get('usd')
+        except Exception:
+            ath = atl = None
+        result = {
+            'name': coin.get('name'),
+            'symbol': coin.get('symbol'),
+            'market_cap': coin['quote']['USD'].get('market_cap'),
+            'circulating_supply': coin.get('circulating_supply'),
+            'total_supply': coin.get('total_supply'),
+            'max_supply': coin.get('max_supply'),
+            'ath': ath,
+            'atl': atl,
+            'roi_since_beginning': roi_since_beginning,
+            'roi_1y': roi_1y,
+            'roi_90d': roi_90d,
+            'last_updated': coin.get('last_updated'),
+        }
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/daytrading/insight', methods=['GET'])
+def get_daytrading_insight():
+    """
+    Real-time day trading insight using ML prediction for the selected symbol.
+    Query param: symbol (e.g., BTC_USD)
+    Returns: entry_point, exit_point, trend, confidence
+    """
+    symbol = request.args.get('symbol', 'BTC_USD')
+    try:
+        prediction = predict_price(symbol=symbol)
+        # For demo: entry = last price, exit = predicted price
+        entry_point = prediction.get('last_actual_close')
+        exit_point = prediction.get('predicted_next_close')
+        trend = prediction.get('trend')
+        confidence = prediction.get('confidence')
+        return jsonify({
+            'entry_point': entry_point,
+            'exit_point': exit_point,
+            'trend': trend,
+            'confidence': confidence
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Add more routes for other specific API calls as needed

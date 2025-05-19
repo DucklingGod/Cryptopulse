@@ -141,6 +141,7 @@ export interface MLPrediction {
   last_actual_close: number;
   mock_implementation?: boolean;
   confidence?: number;
+  uncertainty?: number;
 }
 
 export interface MarketTrend {

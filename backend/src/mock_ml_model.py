@@ -1,189 +1,197 @@
 """
-Mock ML Prediction Module
+ML Prediction Module
 
-This module provides a mock implementation of the ML prediction functionality
-for the crypto dashboard. It's designed with a clear interface that can be
-easily replaced with a real ML implementation in the future.
+This module provides an implementation of the ML prediction functionality
+for the crypto dashboard using LSTM neural networks. It includes data loading,
+preprocessing, model training, and price prediction.
 
-How to replace with real implementation:
-1. Keep the function signatures the same
-2. Replace the mock logic with actual ML model loading and prediction
-3. Ensure the return format matches what's expected by the risk assessment module
+How to use:
+1. Place your historical data CSV files in the 'data' directory. Each file should
+   be named 'ml_prepared_data_<SYMBOL>.csv', where <SYMBOL> is the trading pair
+   symbol (e.g., 'BTC_USD').
+2. Run the 'train_model' function to train the LSTM model on the data.
+3. Use the 'predict_price' function to predict the next price for a given symbol.
 """
 
 import os
 import json
 import random
 from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow import keras
+import requests
 
-# Define constants
-MODEL_DIR = "/home/ubuntu/crypto_dashboard/backend/models"
-DATA_DIR = "/home/ubuntu/crypto_dashboard/backend/data"
+# Define directories
+MODEL_DIR = os.path.join(os.path.dirname(__file__), '../models')
+DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
 
-# Cache for mock predictions to ensure consistency between calls
-PREDICTION_CACHE = {}
+ALPHAVANTAGE_API_KEY = "OFFA5DMQEMQY5O2P"
 
-def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, 
-                            for_prediction=False, last_n_rows_for_pred=None):
+# --- Alpha Vantage Data Fetching ---
+def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full"):
     """
-    Mock implementation of data loading and preprocessing.
-    
-    In a real implementation, this would:
-    1. Load historical price data
-    2. Scale the data
-    3. Create sequences for LSTM input
-    
-    Args:
-        symbol: Trading pair symbol (e.g., "BTC_USD")
-        sequence_length: Number of time steps in each sequence
-        train_split: Proportion of data to use for training
-        for_prediction: Whether data is being prepared for prediction
-        last_n_rows_for_pred: Number of rows to use for prediction
-        
-    Returns:
-        Tuple containing mock data structures that would normally be used for ML
+    Fetches daily historical price data from Alpha Vantage and saves as CSV for ML pipeline.
     """
-    print(f"[MOCK] Loading and preprocessing data for {symbol}")
-    
-    # Check if we have real data available (for reference only)
+    # Alpha Vantage crypto endpoint: https://www.alphavantage.co/documentation/#digital-currency-daily
+    base_url = "https://www.alphavantage.co/query"
+    params = {
+        "function": "DIGITAL_CURRENCY_DAILY",
+        "symbol": symbol.split("_")[0],  # e.g., BTC
+        "market": market,  # e.g., USD
+        "apikey": ALPHAVANTAGE_API_KEY
+    }
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    if "Time Series (Digital Currency Daily)" not in data:
+        raise ValueError(f"Alpha Vantage API error or limit reached: {data}")
+    ts = data["Time Series (Digital Currency Daily)"]
+    # Convert to DataFrame
+    df = pd.DataFrame.from_dict(ts, orient="index")
+    df.index = pd.to_datetime(df.index)
+    df = df.sort_index()
+    # Use '4a. close (USD)' or fallback to '4b. close (USD)' as the close price
+    close_col = None
+    for candidate in ["4a. close (USD)", "4b. close (USD)"]:
+        if candidate in df.columns:
+            close_col = candidate
+            break
+    if not close_col:
+        print(f"[ERROR] No close price in USD found for {symbol}. Available columns: {list(df.columns)}")
+        raise ValueError(f"No close price in USD found for {symbol} from Alpha Vantage.")
+    df_out = pd.DataFrame({
+        "date": df.index,
+        "close": df[close_col].astype(float)
+    })
+    out_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    df_out.to_csv(out_path, index=False)
+    print(f"[INFO] Saved Alpha Vantage data to {out_path}")
+    return out_path
+
+# --- Data Loading (updated) ---
+def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
     data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
-    has_real_data = os.path.exists(data_path)
-    
-    if has_real_data:
-        print(f"[MOCK] Real data file exists at {data_path} (not used in mock implementation)")
-    
-    # Return mock objects that mimic what would be returned by the real implementation
+    if not os.path.exists(data_path):
+        print(f"[INFO] Data file not found for {symbol}, fetching from Alpha Vantage...")
+        fetch_and_save_alphavantage(symbol)
+    df = pd.read_csv(data_path)
+    # --- Use all relevant features for ML, including Elliott Wave-inspired features ---
+    # List of features to use (add more as needed)
+    features_to_use = [
+        'close',
+        'avg_sentiment_score',
+        'rsi', 'macd', 'macd_signal', 'macd_diff',
+        'bb_high', 'bb_low', 'bb_mid', 'bb_width',
+        'ema_20', 'ema_50', 'sma_20', 'sma_50',
+        'doji', 'hammer', 'bullish_engulfing',
+        'price_change_pct', 'close_lag_1', 'close_lag_3', 'close_lag_7',
+        'sentiment_lag_1', 'sentiment_lag_3', 'sentiment_lag_7',
+        'swing_high', 'swing_low', 'zigzag', 'wave_count'
+    ]
+    # Only keep features that exist in the DataFrame
+    features_to_use = [f for f in features_to_use if f in df.columns]
+    if 'close' not in features_to_use:
+        raise ValueError("CSV must contain a 'close' column.")
+    data_for_scaling = df[features_to_use].values
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaled = scaler.fit_transform(data_for_scaling)
+    X, y = [], []
+    for i in range(sequence_length, len(scaled)):
+        X.append(scaled[i-sequence_length:i, :])
+        y.append(scaled[i, 0])  # Predicting 'close'
+    X, y = np.array(X), np.array(y)
+    split = int(len(X) * train_split)
     if for_prediction:
-        # For prediction mode, return None for training data and mock prediction sequence
-        mock_X_pred = [[random.uniform(0.4, 0.6) for _ in range(2)] for _ in range(sequence_length)]
-        mock_scaler = "MOCK_SCALER"
-        mock_df = {"close": [random.uniform(90000, 100000) for _ in range(sequence_length)]}
-        return None, None, None, mock_X_pred, mock_scaler, mock_df
+        X_pred = scaled[-sequence_length:]
+        X_pred = np.reshape(X_pred, (1, sequence_length, len(features_to_use)))
+        return None, None, None, X_pred, scaler, df
     else:
-        # For training mode, return mock training and test data
-        mock_X_train = [[random.uniform(0.4, 0.6) for _ in range(2)] for _ in range(100)]
-        mock_y_train = [random.uniform(0.4, 0.6) for _ in range(100)]
-        mock_X_test = [[random.uniform(0.4, 0.6) for _ in range(2)] for _ in range(20)]
-        mock_y_test = [random.uniform(0.4, 0.6) for _ in range(20)]
-        mock_scaler = "MOCK_SCALER"
-        mock_df = {"close": [random.uniform(90000, 100000) for _ in range(120)]}
-        return mock_X_train, mock_y_train, mock_X_test, mock_y_test, mock_scaler, mock_df
+        return X[:split], y[:split], X[split:], y[split:], scaler, df
 
+# --- Model Building ---
 def build_lstm_model(input_shape):
-    """
-    Mock implementation of LSTM model building.
-    
-    In a real implementation, this would:
-    1. Create a Sequential model with LSTM layers
-    2. Compile the model
-    
-    Args:
-        input_shape: Shape of input data for the model
-        
-    Returns:
-        Mock model object
-    """
-    print(f"[MOCK] Building LSTM model with input shape {input_shape}")
-    return "MOCK_MODEL"
+    model = keras.Sequential([
+        keras.layers.LSTM(50, return_sequences=True, input_shape=input_shape),
+        keras.layers.Dropout(0.2),
+        keras.layers.LSTM(50),
+        keras.layers.Dropout(0.2),
+        keras.layers.Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    return model
 
+# --- Training ---
 def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
-    """
-    Mock implementation of model training.
-    
-    In a real implementation, this would:
-    1. Load and preprocess data
-    2. Build the LSTM model
-    3. Train the model on the data
-    4. Save the trained model
-    
-    Args:
-        symbol: Trading pair symbol (e.g., "BTC_USD")
-        sequence_length: Number of time steps in each sequence
-        epochs: Number of training epochs
-        batch_size: Batch size for training
-        
-    Returns:
-        Tuple containing mock model, scaler, and history
-    """
-    print(f"[MOCK] Training model for {symbol} with {epochs} epochs and batch size {batch_size}")
-    
-    # Create mock model file to simulate successful training
-    model_path = os.path.join(MODEL_DIR, f"mock_lstm_model_{symbol}.json")
+    X_train, y_train, X_test, y_test, scaler, df = load_and_preprocess_data(symbol, sequence_length)
+    model = build_lstm_model((X_train.shape[1], X_train.shape[2]))
+    early_stopping = keras.callbacks.EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+    reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.2, patience=5, min_lr=1e-5)
+    history = model.fit(
+        X_train, y_train, epochs=epochs, batch_size=batch_size,
+        validation_data=(X_test, y_test), verbose=1,
+        callbacks=[early_stopping, reduce_lr]
+    )
     os.makedirs(MODEL_DIR, exist_ok=True)
-    
-    with open(model_path, 'w') as f:
-        json.dump({
-            "model_type": "MOCK_LSTM",
-            "symbol": symbol,
-            "sequence_length": sequence_length,
-            "created_at": datetime.now().isoformat()
-        }, f)
-    
-    print(f"[MOCK] Model saved to {model_path}")
-    return "MOCK_MODEL", "MOCK_SCALER", "MOCK_HISTORY"
+    model.save(os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras"))
+    np.save(os.path.join(MODEL_DIR, f"scaler_{symbol}.npy"), scaler.min_, allow_pickle=True)
+    np.save(os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy"), scaler.scale_, allow_pickle=True)
+    return model, scaler, history
 
-def predict_price(symbol="BTC_USD", sequence_length=60):
-    """
-    Mock implementation of price prediction.
-    
-    In a real implementation, this would:
-    1. Load the trained model
-    2. Prepare the latest data sequence
-    3. Make a prediction using the model
-    4. Convert the prediction back to the original scale
-    
-    Args:
-        symbol: Trading pair symbol (e.g., "BTC_USD")
-        sequence_length: Number of time steps in each sequence
-        
-    Returns:
-        Dictionary with prediction results
-    """
-    print(f"[MOCK] Predicting price for {symbol}")
-    
-    # Check if we have a cached prediction for this symbol
-    cache_key = f"{symbol}_{sequence_length}"
-    if cache_key in PREDICTION_CACHE:
-        # Use cached prediction if it's less than 5 minutes old
-        cached_data = PREDICTION_CACHE[cache_key]
-        if datetime.now() - cached_data["timestamp"] < timedelta(minutes=5):
-            print(f"[MOCK] Using cached prediction for {symbol}")
-            return cached_data["prediction"]
-    
-    # Get the last actual price (use a realistic value for BTC)
-    if symbol == "BTC_USD":
-        last_price = random.uniform(90000, 100000)
-    else:
-        last_price = random.uniform(1000, 5000)
-    
-    # Generate a random prediction within a realistic range
-    # For demonstration, we'll make it slightly bullish or bearish
-    direction = random.choice([-1, 1, 1])  # Slightly biased toward bullish
-    change_pct = random.uniform(0.5, 2.0) * direction
-    predicted_price = last_price * (1 + change_pct/100)
-    
-    # Determine trend based on price change
-    trend = "bullish" if predicted_price > last_price else "bearish"
-    
-    # Create prediction result
-    prediction = {
-        "predicted_next_close": float(predicted_price),
+# --- Prediction with MC Dropout ---
+def predict_price(symbol="BTC_USD", sequence_length=60, mc_dropout_passes=30):
+    model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
+    scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
+    scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Trained model not found: {model_path}")
+    model = keras.models.load_model(model_path)
+    scaler = MinMaxScaler()
+    scaler.min_ = np.load(scaler_path, allow_pickle=True)
+    scaler.scale_ = np.load(scaler_scale_path, allow_pickle=True)
+    _, _, _, X_pred, _, df = load_and_preprocess_data(symbol, sequence_length, for_prediction=True)
+    # MC Dropout: run prediction multiple times with dropout enabled
+    # Enable dropout at inference by setting training=True
+    preds = []
+    for _ in range(mc_dropout_passes):
+        pred_scaled = model(X_pred, training=True).numpy()[0][0]
+        # Create a dummy array with the same shape as our feature set
+        dummy_array = np.zeros((1, X_pred.shape[2]))
+        dummy_array[0, 0] = pred_scaled  # Set the first feature (close price)
+        pred_price = scaler.inverse_transform(dummy_array)[0][0]
+        preds.append(pred_price)
+    preds = np.array(preds)
+    pred_mean = float(np.mean(preds))
+    pred_std = float(np.std(preds))
+    last_actual_close = df['close'].iloc[-1]
+    trend = "bullish" if pred_mean > last_actual_close else "bearish"
+    # Confidence: 1 - (uncertainty / |predicted change|), clipped to [0,1]
+    pred_change = abs(pred_mean - last_actual_close)
+    confidence = 1.0 - min(pred_std / (pred_change + 1e-8), 1.0) if pred_change > 0 else 0.0
+    return {
+        "predicted_next_close": pred_mean,
         "trend": trend,
-        "last_actual_close": float(last_price),
-        "mock_implementation": True,
-        "confidence": random.uniform(0.6, 0.9)
+        "last_actual_close": float(last_actual_close),
+        "confidence": confidence,
+        "uncertainty": pred_std
     }
-    
-    # Cache the prediction
-    PREDICTION_CACHE[cache_key] = {
-        "timestamp": datetime.now(),
-        "prediction": prediction
-    }
-    
-    return prediction
+
+# --- Utility Functions ---
+def prepare_all_coins(symbols, market="USD"):
+    """
+    Bulk fetch and save historical price data for all given symbols.
+    Example: prepare_all_coins(["BTC_USD", "ETH_USD", "SOL_USD"])
+    """
+    for symbol in symbols:
+        try:
+            print(f"[INFO] Preparing data for {symbol}...")
+            fetch_and_save_alphavantage(symbol, market=market)
+        except Exception as e:
+            print(f"[ERROR] Could not prepare data for {symbol}: {e}")
 
 # For testing
 if __name__ == "__main__":
-    print("Testing mock ML prediction module")
+    print("Testing ML prediction module")
     prediction = predict_price("BTC_USD")
-    print(f"Mock prediction for BTC_USD: {prediction}")
+    print(f"Prediction for BTC_USD: {prediction}")

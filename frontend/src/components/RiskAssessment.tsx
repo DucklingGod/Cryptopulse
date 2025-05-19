@@ -25,6 +25,8 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
       try {
         setLoading(prev => ({ ...prev, risk: true }));
         const response = await axios.get<RiskAssessmentType>(`/api/risk/assessment?symbol=${symbol}`);
+        // TEMP: Log backend response for debugging
+        console.log('Risk assessment API response:', response.data);
         setRiskData(response.data);
         setLoading(prev => ({ ...prev, risk: false }));
       } catch (err) {
@@ -106,20 +108,27 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
 
   // Determine market trends based on risk components
   const getMarketTrends = () => {
-    if (!riskData) return { shortTerm: 'Neutral', mediumTerm: 'Neutral', longTerm: 'Neutral' };
-    
-    // Use prediction component for short-term trend
-    const shortTermScore = riskData.components.prediction.score;
+    // Defensive: ensure components is a plain object and not null/array, and matches expected keys
+    const components = riskData?.components;
+    if (
+      !components ||
+      typeof components !== 'object' ||
+      Array.isArray(components) ||
+      !('prediction' in components) ||
+      !('sentiment' in components) ||
+      !('fear_greed_index' in components)
+    ) {
+      return { shortTerm: 'Neutral', mediumTerm: 'Neutral', longTerm: 'Neutral' };
+    }
+    // Use optional chaining for all subfields
+    const shortTermScore = components.prediction?.score ?? 50;
+    const mediumTermScore = components.sentiment?.score ?? 50;
+    const longTermScore = components.fear_greed_index?.score ?? 50;
+
     const shortTerm = shortTermScore < 40 ? 'Bullish' : shortTermScore > 60 ? 'Bearish' : 'Neutral';
-    
-    // Use sentiment for medium-term trend
-    const mediumTermScore = riskData.components.sentiment.score;
     const mediumTerm = mediumTermScore < 40 ? 'Bullish' : mediumTermScore > 60 ? 'Bearish' : 'Neutral';
-    
-    // Use fear & greed for long-term trend
-    const longTermScore = riskData.components.fear_greed_index.score;
     const longTerm = longTermScore < 40 ? 'Bullish' : longTermScore > 60 ? 'Bearish' : 'Neutral';
-    
+
     return { shortTerm, mediumTerm, longTerm };
   };
 
@@ -133,7 +142,11 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
           <p>Loading risk assessment data...</p>
         ) : error.risk ? (
           <p className="error">{error.risk}</p>
-        ) : riskData ? (
+        ) : riskData && riskData.overall_risk && riskData.components &&
+          'volatility' in riskData.components &&
+          'sentiment' in riskData.components &&
+          'prediction' in riskData.components &&
+          'fear_greed_index' in riskData.components ? (
           <div className="risk-factors-content">
             <div className="risk-factor">
               <span className="risk-label">Risk level</span>
@@ -149,18 +162,18 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
               <span 
                 className="risk-value" 
                 style={{ 
-                  color: riskData.components.volatility.score > 60 ? '#ea3943' : 
-                         riskData.components.volatility.score > 30 ? '#ff9800' : '#16c784' 
+                  color: riskData.components.volatility && riskData.components.volatility.score > 60 ? '#ea3943' : 
+                         riskData.components.volatility && riskData.components.volatility.score > 30 ? '#ff9800' : '#16c784' 
                 }}
               >
-                {riskData.components.volatility.score > 60 ? 'High' : 
-                 riskData.components.volatility.score > 30 ? 'Moderate' : 'Low'}
+                {riskData.components.volatility && riskData.components.volatility.score > 60 ? 'High' : 
+                 riskData.components.volatility && riskData.components.volatility.score > 30 ? 'Moderate' : 'Low'}
               </span>
             </div>
             <div className="risk-factor">
               <span className="risk-label">External factors</span>
               <span className="risk-value">
-                {riskData.components.fear_greed_index.classification}
+                {riskData.components.fear_greed_index?.classification ?? 'N/A'}
               </span>
             </div>
           </div>
@@ -175,7 +188,7 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
           <p>Loading market trend data...</p>
         ) : error.risk ? (
           <p className="error">{error.risk}</p>
-        ) : riskData ? (
+        ) : (
           <div className="market-trend-content">
             <div className="trend-overall">
               <span 
@@ -213,8 +226,6 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
               </span>
             </div>
           </div>
-        ) : (
-          <p>No market trend data available.</p>
         )}
       </div>
 

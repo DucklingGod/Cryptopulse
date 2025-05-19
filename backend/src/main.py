@@ -8,6 +8,7 @@ from src.models.user import db # This might be unused if not using user model ye
 from src.routes.user import user_bp # This might be unused if not using user routes yet
 from src.routes.api_routes import api_bp # Import the new API blueprint
 from src.routes.risk_routes import risk_bp # Import the risk assessment blueprint
+from src.routes.api_routes import fundamental_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
@@ -16,6 +17,7 @@ app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 # app.register_blueprint(user_bp, url_prefix='/api') # Keep or remove if not used
 app.register_blueprint(api_bp, url_prefix='/api') # Register the new API blueprint
 app.register_blueprint(risk_bp) # Register the risk assessment blueprint
+app.register_blueprint(fundamental_bp, url_prefix='/api')
 
 # uncomment if you need to use database
 # app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USERNAME', 'root')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'mydb')}"

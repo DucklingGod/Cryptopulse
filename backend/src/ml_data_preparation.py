@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import ta
 
 # Base URL for our own backend API
 BACKEND_API_BASE_URL = "http://127.0.0.1:5000/api"
@@ -122,13 +123,10 @@ def prepare_ml_data(symbol="BTC/USD", price_interval="1day", price_outputsize="3
         prices_df.index = prices_df.index.tz_localize(None)
 
     if not news_df.empty and 'published_at' in news_df.columns and 'sentiment_score' in news_df.columns:
-        # 'published_at' in news_df is already made timezone-naive in fetch_news_with_sentiment
-        news_df["date"] = news_df["published_at"].dt.normalize() # This will be tz-naive
+        news_df["date"] = news_df["published_at"].dt.normalize()
         daily_sentiment = news_df.groupby("date")["sentiment_score"].mean().rename("avg_sentiment_score")
-        # daily_sentiment.index will be tz-naive because 'date' column (derived from tz-naive 'published_at') is tz-naive
-        
         combined_df = prices_df.join(daily_sentiment, how="left")
-        combined_df["avg_sentiment_score"] = combined_df["avg_sentiment_score"].fillna(0) 
+        combined_df["avg_sentiment_score"] = combined_df["avg_sentiment_score"].fillna(0)
     else:
         combined_df = prices_df.copy()
         combined_df["avg_sentiment_score"] = 0
@@ -139,18 +137,41 @@ def prepare_ml_data(symbol="BTC/USD", price_interval="1day", price_outputsize="3
     if 'close' not in combined_df.columns:
         print("Error: 'close' column missing from price data. Cannot proceed with feature engineering.")
         return pd.DataFrame()
-        
+
+    # --- Add technical indicators ---
+    combined_df['rsi'] = ta.momentum.RSIIndicator(close=combined_df['close'], window=14).rsi()
+    combined_df['macd'] = ta.trend.MACD(close=combined_df['close']).macd()
+    combined_df['macd_signal'] = ta.trend.MACD(close=combined_df['close']).macd_signal()
+    combined_df['macd_diff'] = ta.trend.MACD(close=combined_df['close']).macd_diff()
+    bb = ta.volatility.BollingerBands(close=combined_df['close'])
+    combined_df['bb_high'] = bb.bollinger_hband()
+    combined_df['bb_low'] = bb.bollinger_lband()
+    combined_df['bb_mid'] = bb.bollinger_mavg()
+    combined_df['bb_width'] = bb.bollinger_wband()
+    combined_df['ema_20'] = ta.trend.EMAIndicator(close=combined_df['close'], window=20).ema_indicator()
+    combined_df['ema_50'] = ta.trend.EMAIndicator(close=combined_df['close'], window=50).ema_indicator()
+    combined_df['sma_20'] = ta.trend.SMAIndicator(close=combined_df['close'], window=20).sma_indicator()
+    combined_df['sma_50'] = ta.trend.SMAIndicator(close=combined_df['close'], window=50).sma_indicator()
+    # --- Add simple candlestick pattern features (pure pandas) ---
+    # Doji: body is very small compared to range
+    combined_df['doji'] = ((abs(combined_df['close'] - combined_df['open']) <= (combined_df['high'] - combined_df['low']) * 0.1)).astype(int)
+    # Hammer: small body, long lower shadow
+    combined_df['hammer'] = (((combined_df['high'] - combined_df['low']) > 3 * abs(combined_df['close'] - combined_df['open'])) & ((combined_df['close'] - combined_df['low']) / (0.001 + combined_df['high'] - combined_df['low']) > 0.6) & ((combined_df['open'] - combined_df['low']) / (0.001 + combined_df['high'] - combined_df['low']) > 0.6)).astype(int)
+    # Bullish Engulfing: previous red, current green, current body engulfs previous
+    prev_open = combined_df['open'].shift(1)
+    prev_close = combined_df['close'].shift(1)
+    cond1 = (prev_close < prev_open) & (combined_df['close'] > combined_df['open'])
+    cond2 = (combined_df['close'] > prev_open) & (combined_df['open'] < prev_close)
+    combined_df['bullish_engulfing'] = (cond1 & cond2).astype(int)
+    # --- Add price change and lag features ---
     combined_df["price_change_pct"] = combined_df["close"].pct_change() * 100
     for lag in [1, 3, 7]:
         combined_df[f'close_lag_{lag}'] = combined_df['close'].shift(lag)
         if 'avg_sentiment_score' in combined_df.columns:
-             combined_df[f'sentiment_lag_{lag}'] = combined_df['avg_sentiment_score'].shift(lag)
-
+            combined_df[f'sentiment_lag_{lag}'] = combined_df['avg_sentiment_score'].shift(lag)
     combined_df.dropna(inplace=True)
-
     print("DataFrame head after feature engineering and dropna:")
     print(combined_df.head())
-
     output_filename = f"/home/ubuntu/crypto_dashboard/backend/data/ml_prepared_data_{symbol.replace('/', '_')}.csv"
     try:
         import os
@@ -159,7 +180,6 @@ def prepare_ml_data(symbol="BTC/USD", price_interval="1day", price_outputsize="3
         print(f"Prepared data saved to {output_filename}")
     except Exception as e:
         print(f"Error saving data to CSV: {e}")
-        
     return combined_df
 
 if __name__ == "__main__":

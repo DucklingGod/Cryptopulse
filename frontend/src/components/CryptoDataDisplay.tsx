@@ -93,6 +93,55 @@ const CryptoDataDisplay = () => {
     }
   }, [selectedCoin]);
 
+  // Fetch fundamental data for selected coin from CoinGecko
+  const [fundamentalData, setFundamentalData] = useState<any>(null);
+  const [loadingFundamental, setLoadingFundamental] = useState(false);
+  const [errorFundamental, setErrorFundamental] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFundamentalData = async () => {
+      if (!selectedCoin) return;
+      setLoadingFundamental(true);
+      setErrorFundamental(null);
+      setFundamentalData(null);
+      try {
+        // Extract symbol (e.g., BTC from BTC/USD)
+        const symbol = selectedCoin.split('/')[0];
+        const response = await axios.get(`/api/fundamental/${symbol}`);
+        setFundamentalData(response.data);
+      } catch (err: any) {
+        setErrorFundamental('Failed to fetch fundamental data.');
+        setFundamentalData(null);
+      } finally {
+        setLoadingFundamental(false);
+      }
+    };
+    fetchFundamentalData();
+  }, [selectedCoin]);
+
+  // Day Trading Insight (real-time)
+  const [dayTradingInsight, setDayTradingInsight] = useState<any>(null);
+  const [loadingDayTrading, setLoadingDayTrading] = useState(false);
+  const [errorDayTrading, setErrorDayTrading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDayTradingInsight = async () => {
+      setLoadingDayTrading(true);
+      setErrorDayTrading(null);
+      setDayTradingInsight(null);
+      try {
+        const symbol = selectedCoin.replace('/', '_');
+        const response = await axios.get(`/api/daytrading/insight?symbol=${symbol}`);
+        setDayTradingInsight(response.data);
+      } catch (err: any) {
+        setErrorDayTrading('Failed to fetch day trading insight.');
+      } finally {
+        setLoadingDayTrading(false);
+      }
+    };
+    fetchDayTradingInsight();
+  }, [selectedCoin]);
+
   const handleCoinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCoin(e.target.value);
   };
@@ -104,8 +153,8 @@ const CryptoDataDisplay = () => {
         <div className="coin-selector">
           <label htmlFor="coin-select">Select Coin: </label>
           <select id="coin-select" value={selectedCoin} onChange={handleCoinChange}>
-            {cryptoData.length > 0 ? (
-              cryptoData.slice(0,10).map(coin => (
+            {Array.isArray(cryptoData) && cryptoData.length > 0 ? (
+              cryptoData.slice(0,10).filter(Boolean).map(coin => (
                 <option key={coin.id} value={`${coin.symbol}/USD`}>{coin.name} ({coin.symbol}/USD)</option>
               ))
             ) : (
@@ -128,49 +177,115 @@ const CryptoDataDisplay = () => {
               <p className="error">{error.crypto}</p>
             ) : (
               <>
-                {cryptoData.filter(coin => `${coin.symbol}/USD` === selectedCoin).map((coin) => (
-                  <div key={coin.id} className="coin-detail">
-                    <div className="coin-header">
-                      <div className="coin-icon">{coin.symbol.charAt(0)}</div>
-                      <div className="coin-name-price">
-                        <h3>{coin.name} <span className="coin-symbol">({coin.symbol})</span></h3>
-                        <div className="coin-price">${coin.quote.USD.price.toFixed(2)}
-                          <span className={coin.quote.USD.percent_change_24h > 0 ? 'positive' : 'negative'}>
-                            {coin.quote.USD.percent_change_24h > 0 ? '+' : ''}{coin.quote.USD.percent_change_24h.toFixed(2)}%
-                          </span>
+                {Array.isArray(cryptoData) && cryptoData.filter(coin => `${coin.symbol}/USD` === selectedCoin).map((coin) => (
+                  coin && coin.quote && coin.quote.USD ? (
+                    <div key={coin.id} className="coin-detail">
+                      <div className="coin-header">
+                        <div className="coin-icon">{coin.symbol.charAt(0)}</div>
+                        <div className="coin-name-price">
+                          <h3>{coin.name} <span className="coin-symbol">({coin.symbol})</span></h3>
+                          <div className="coin-price">${coin.quote.USD.price.toFixed(2)}
+                            <span className={coin.quote.USD.percent_change_24h > 0 ? 'positive' : 'negative'}>
+                              {coin.quote.USD.percent_change_24h > 0 ? '+' : ''}{coin.quote.USD.percent_change_24h.toFixed(2)}%
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="coin-metrics">
+                        <div className="metric">
+                          <span className="metric-label">Market cap</span>
+                          <span className="metric-value">${(coin.quote.USD.market_cap / 1e9).toFixed(2)}B</span>
+                        </div>
+                        <div className="metric">
+                          <span className="metric-label">Market supply</span>
+                          <span className="metric-value">{(coin.total_supply / 1e6).toFixed(2)}M</span>
+                        </div>
+                        <div className="metric">
+                          <span className="metric-label">Circulating supply</span>
+                          <span className="metric-value">{(coin.circulating_supply / 1e6).toFixed(2)}M</span>
+                        </div>
+                      </div>
+                      <div className="fundamental-analysis">
+                        <h4>Fundamental Analysis</h4>
+                        {loadingFundamental ? (
+                          <p>Loading fundamental data...</p>
+                        ) : errorFundamental ? (
+                          <p className="error">{errorFundamental}</p>
+                        ) : fundamentalData ? (
+                          <>
+                            <div className="metric">
+                              <span className="metric-label">Market Cap</span>
+                              <span className="metric-value">${fundamentalData.market_cap ? (fundamentalData.market_cap / 1e9).toFixed(2) + 'B' : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">Circulating Supply</span>
+                              <span className="metric-value">{fundamentalData.circulating_supply ? fundamentalData.circulating_supply.toLocaleString() : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">Total Supply</span>
+                              <span className="metric-value">{fundamentalData.total_supply ? fundamentalData.total_supply.toLocaleString() : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">Max Supply</span>
+                              <span className="metric-value">{fundamentalData.max_supply ? fundamentalData.max_supply.toLocaleString() : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">ROI (Since Beginning)</span>
+                              <span className={
+                                fundamentalData.roi_since_beginning !== null && fundamentalData.roi_since_beginning !== undefined
+                                  ? fundamentalData.roi_since_beginning > 0
+                                    ? "metric-value positive"
+                                    : fundamentalData.roi_since_beginning < 0
+                                      ? "metric-value negative"
+                                      : "metric-value"
+                                  : "metric-value"
+                              }>
+                                {fundamentalData.roi_since_beginning !== null && fundamentalData.roi_since_beginning !== undefined ? (fundamentalData.roi_since_beginning > 0 ? '+' : '') + fundamentalData.roi_since_beginning.toFixed(2) + '%' : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">ROI (1 Year)</span>
+                              <span className={
+                                fundamentalData.roi_1y !== null && fundamentalData.roi_1y !== undefined
+                                  ? fundamentalData.roi_1y > 0
+                                    ? "metric-value positive"
+                                    : fundamentalData.roi_1y < 0
+                                      ? "metric-value negative"
+                                      : "metric-value"
+                                  : "metric-value"
+                              }>
+                                {fundamentalData.roi_1y !== null && fundamentalData.roi_1y !== undefined ? (fundamentalData.roi_1y > 0 ? '+' : '') + fundamentalData.roi_1y.toFixed(2) + '%' : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">ROI (90 Days)</span>
+                              <span className={
+                                fundamentalData.roi_90d !== null && fundamentalData.roi_90d !== undefined
+                                  ? fundamentalData.roi_90d > 0
+                                    ? "metric-value positive"
+                                    : fundamentalData.roi_90d < 0
+                                      ? "metric-value negative"
+                                      : "metric-value"
+                                  : "metric-value"
+                              }>
+                                {fundamentalData.roi_90d !== null && fundamentalData.roi_90d !== undefined ? (fundamentalData.roi_90d > 0 ? '+' : '') + fundamentalData.roi_90d.toFixed(2) + '%' : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">ATH</span>
+                              <span className="metric-value">{fundamentalData.ath !== null && fundamentalData.ath !== undefined ? '$' + Number(fundamentalData.ath).toLocaleString() : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                              <span className="metric-label">ATL</span>
+                              <span className="metric-value">{fundamentalData.atl !== null && fundamentalData.atl !== undefined ? '$' + Number(fundamentalData.atl).toLocaleString() : 'N/A'}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <p>No fundamental data available.</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="coin-metrics">
-                      <div className="metric">
-                        <span className="metric-label">Market cap</span>
-                        <span className="metric-value">${(coin.quote.USD.market_cap / 1e9).toFixed(2)}B</span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Market supply</span>
-                        <span className="metric-value">{(coin.total_supply / 1e6).toFixed(2)}M</span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Circulating supply</span>
-                        <span className="metric-value">{(coin.circulating_supply / 1e6).toFixed(2)}M</span>
-                      </div>
-                    </div>
-                    <div className="fundamental-analysis">
-                      <h4>Fundamental Analysis</h4>
-                      <div className="metric">
-                        <span className="metric-label">P/E Ratio</span>
-                        <span className="metric-value">25.6</span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">ROI</span>
-                        <span className="metric-value positive">+4,829.37%</span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Historical Performance</span>
-                        <span className="metric-value positive">+129.39%</span>
-                      </div>
-                    </div>
-                  </div>
+                  ) : null
                 ))}
               </>
             )}
@@ -217,20 +332,44 @@ const CryptoDataDisplay = () => {
 
           <div className="day-trading-section dashboard-section">
             <h2>Day Trading Insights</h2>
-            <div className="trading-insights-grid">
-              <div className="trading-insight">
-                <span className="insight-label">Entry Point</span>
-                <span className="insight-value">${Math.floor(Math.random() * 5000) + 60000}</span>
+            {loadingDayTrading ? (
+              <p>Loading day trading insight...</p>
+            ) : errorDayTrading ? (
+              <p className="error">{errorDayTrading}</p>
+            ) : dayTradingInsight ? (
+              <div className="trading-insights-grid">
+                <div className="trading-insight">
+                  <span className="insight-label">Entry Point</span>
+                  <span className="insight-value">${dayTradingInsight.entry_point ? dayTradingInsight.entry_point.toLocaleString(undefined, {maximumFractionDigits: 2}) : 'N/A'}</span>
+                </div>
+                <div className="trading-insight">
+                  <span className="insight-label">Exit Point</span>
+                  <span className="insight-value">${dayTradingInsight.exit_point ? dayTradingInsight.exit_point.toLocaleString(undefined, {maximumFractionDigits: 2}) : 'N/A'}</span>
+                </div>
+                <div className="trading-insight">
+                  <span className="insight-label">Trend</span>
+                  <span className={dayTradingInsight.trend === 'bullish' ? 'insight-value bullish' : dayTradingInsight.trend === 'bearish' ? 'insight-value bearish' : 'insight-value'}>
+                    {dayTradingInsight.trend ? dayTradingInsight.trend.charAt(0).toUpperCase() + dayTradingInsight.trend.slice(1) : 'N/A'}
+                  </span>
+                </div>
+                <div className="trading-insight">
+                  <span className="insight-label">Confidence
+                    <span title="Confidence is based on model uncertainty (lower uncertainty = higher confidence)." style={{marginLeft: 6, cursor: 'help', color: '#888'}}>?</span>
+                  </span>
+                  <span className="insight-value">{dayTradingInsight.confidence !== undefined && dayTradingInsight.confidence !== null ? (dayTradingInsight.confidence * 100).toFixed(1) + '%' : 'N/A'}</span>
+                </div>
+                {dayTradingInsight.uncertainty !== undefined && (
+                  <div className="trading-insight">
+                    <span className="insight-label">Uncertainty
+                      <span title="Uncertainty is the standard deviation of model predictions (lower is better)." style={{marginLeft: 6, cursor: 'help', color: '#888'}}>?</span>
+                    </span>
+                    <span className="insight-value">{Number(dayTradingInsight.uncertainty).toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                  </div>
+                )}
               </div>
-              <div className="trading-insight">
-                <span className="insight-label">Exit Point</span>
-                <span className="insight-value">${Math.floor(Math.random() * 5000) + 60000}</span>
-              </div>
-              <div className="trading-insight">
-                <span className="insight-label">Trade Volume</span>
-                <span className="insight-value bearish">Bearish</span>
-              </div>
-            </div>
+            ) : (
+              <p>No day trading insight available.</p>
+            )}
           </div>
 
           <div className="news-section dashboard-section">
@@ -241,13 +380,13 @@ const CryptoDataDisplay = () => {
               <p className="error">{error.news}</p>
             ) : (
               <div className="news-list">
-                {newsData.slice(0, 5).map((news: NewsItem) => (
+                {(Array.isArray(newsData) ? newsData : []).slice(0, 5).filter(Boolean).map((news: NewsItem) => (
                   <div key={news.id} className="news-item">
                     <h3><a href={news.url} target="_blank" rel="noopener noreferrer">{news.title}</a></h3>
                     <p className="news-meta">
                       Source: {news.source.title} | Published: {new Date(news.published_at).toLocaleString()}
                     </p>
-                    {news.currencies && news.currencies.length > 0 && (
+                    {Array.isArray(news.currencies) && news.currencies.length > 0 && (
                       <div className="news-currencies">
                         Related: {news.currencies.map(c => c.code).join(', ')}
                       </div>
@@ -279,17 +418,19 @@ const CryptoDataDisplay = () => {
               </tr>
             </thead>
             <tbody>
-              {cryptoData.slice(0, 20).map((coin: Coin) => (
-                <tr key={coin.id}>
-                  <td>{coin.cmc_rank}</td>
-                  <td><Link to={`/coin/${coin.id}`}>{coin.name}</Link></td>
-                  <td>{coin.symbol}</td>
-                  <td>${coin.quote.USD.price.toFixed(2)}</td>
-                  <td className={coin.quote.USD.percent_change_24h > 0 ? 'positive' : 'negative'}>
-                    {coin.quote.USD.percent_change_24h > 0 ? '+' : ''}{coin.quote.USD.percent_change_24h.toFixed(2)}%
-                  </td>
-                  <td>${(coin.quote.USD.market_cap / 1e9).toFixed(2)}B</td>
-                </tr>
+              {Array.isArray(cryptoData) && cryptoData.length > 0 && cryptoData.slice(0, 20).filter(Boolean).map((coin: Coin) => (
+                coin && coin.quote && coin.quote.USD ? (
+                  <tr key={coin.id}>
+                    <td>{coin.cmc_rank}</td>
+                    <td><Link to={`/coin/${coin.id}`}>{coin.name}</Link></td>
+                    <td>{coin.symbol}</td>
+                    <td>${coin.quote.USD.price.toFixed(2)}</td>
+                    <td className={coin.quote.USD.percent_change_24h > 0 ? 'positive' : 'negative'}>
+                      {coin.quote.USD.percent_change_24h > 0 ? '+' : ''}{coin.quote.USD.percent_change_24h.toFixed(2)}%
+                    </td>
+                    <td>${(coin.quote.USD.market_cap / 1e9).toFixed(2)}B</td>
+                  </tr>
+                ) : null
               ))}
             </tbody>
           </table>
