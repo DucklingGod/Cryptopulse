@@ -27,6 +27,8 @@ def get_risk_assessment():
         risk_assessment = risk_calculator.calculate_overall_risk(ml_prediction)
         
         return jsonify(risk_assessment)
+    except FileNotFoundError as fnf:
+        return jsonify({"error": str(fnf)}), 404
     except Exception as e:
         print(f"Error in risk assessment: {e}")
         return jsonify({"error": str(e)}), 500

@@ -26,17 +26,11 @@ class RiskCalculator:
     
     def __init__(self, symbol="BTC_USD"):
         self.symbol = symbol
-        # Instead of hardcoding file paths, use os.path.join and always use forward slashes for URLs
         data_dir = os.path.join(os.path.dirname(__file__), '../../data')
         filename = f"ml_prepared_data_{symbol}.csv"
-        self.data_path = os.path.join(data_dir, filename)
-        # Normalize path for cross-platform compatibility
-        self.data_path = os.path.normpath(self.data_path)
+        self.data_path = os.path.normpath(os.path.join(data_dir, filename))
         if not os.path.exists(self.data_path):
-            # Return a 404 or 422 error with a clear message
-            from flask import jsonify
-            return jsonify({"error": f"Data file not found: {self.data_path}"}), 404
-        
+            raise FileNotFoundError(f"Data file not found: {self.data_path}")
         self.fear_greed_cache = {"timestamp": None, "data": None}
         self.load_data()
     
