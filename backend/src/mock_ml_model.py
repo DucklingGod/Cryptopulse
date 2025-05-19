@@ -156,8 +156,9 @@ def predict_price(symbol="BTC_USD", sequence_length=60, mc_dropout_passes=30):
     model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
     scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
     scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Trained model not found: {model_path}")
+    print(f"[DEBUG] Loading model from: {model_path}")
+    print(f"[DEBUG] File exists: {os.path.exists(model_path)}")
+    print(f"[DEBUG] File size: {os.path.getsize(model_path) if os.path.exists(model_path) else 'N/A'}")
     model = keras.models.load_model(model_path)
     scaler = MinMaxScaler()
     scaler.min_ = np.load(scaler_path, allow_pickle=True)
