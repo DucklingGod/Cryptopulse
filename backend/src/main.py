@@ -13,10 +13,8 @@ from src.routes.api_routes import fundamental_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
-# Update CORS to allow only the Vercel frontend domain
-CORS(app, origins=[
-    "https://cryptopulse-v35l-1t6v1kct6-euro-moods-projects.vercel.app"
-], supports_credentials=True)
+# TEMP: Allow all origins and headers for debugging CORS
+CORS(app, origins="*", allow_headers="*", expose_headers="*", supports_credentials=False)
 
 # Register blueprints
 # app.register_blueprint(user_bp, url_prefix='/api') # Keep or remove if not used
