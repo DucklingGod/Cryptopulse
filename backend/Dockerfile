@@ -10,8 +10,8 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy data and models folders for ML model and data access
-COPY data/ ./data/
-COPY models/ ./models/
+COPY backend/data/ ./data/
+COPY backend/models/ ./models/
 
 # Copy the rest of your code
 COPY . .
