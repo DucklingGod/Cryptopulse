@@ -29,11 +29,11 @@ mdurl
 ml_dtypes
 namex
 nltk
-numpy>=1.23.0
+numpy==1.23.5
 opt_einsum
 optree
 packaging
-pandas>=1.5.0
+pandas==1.5.3
 protobuf==3.19.6
 pycparser
 Pygments
@@ -44,7 +44,7 @@ regex
 requests
 rich
 scikit-learn>=1.1.0
-scipy>=1.8.0
+scipy==1.10.1
 six
 SQLAlchemy
 tensorboard==2.11.2
