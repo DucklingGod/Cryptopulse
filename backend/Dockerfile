@@ -6,15 +6,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y build-essential gcc
 
 # Copy requirements and install
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy the rest of your code
 COPY . .
 
 # Copy data and models folders for ML model and data access (these will overwrite any empty/incorrect ones from above)
-COPY backend/data/ ./data/
-COPY backend/models/ ./models/
+COPY data/ ./data/
+COPY models/ ./models/
 
 # Debug: list model files
 RUN ls -lh ./models/
