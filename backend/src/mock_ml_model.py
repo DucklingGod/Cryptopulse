@@ -76,8 +76,9 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
 
 # --- Data Loading (updated) ---
 def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
+    # Always use absolute path for Bitstamp_BTCUSD_d.csv for BTC_USD
     if symbol == "BTC_USD":
-        data_path = "/app/data/btc-usd-max.csv"
+        data_path = "/app/data/Bitstamp_BTCUSD_d.csv"
     else:
         data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
     print(f"[DEBUG] Loading data from: {data_path}")
@@ -85,10 +86,7 @@ def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0
         raise FileNotFoundError(f"Data file not found: {data_path}")
     df = pd.read_csv(data_path)
     print(f"[DEBUG] Columns in {data_path}: {list(df.columns)}")
-    # If BTC_USD, set close as next day's open
-    if symbol == "BTC_USD" and 'open' in df.columns:
-        df['close'] = df['open'].shift(-1)
-        df = df.iloc[:-1]  # Drop last row with NaN close
+    # For Bitstamp_BTCUSD_d.csv, use the 'close' column as-is
     if 'close' not in df.columns:
         raise ValueError(f"CSV file {data_path} must contain a 'close' column. Columns found: {list(df.columns)}")
     # --- Use all relevant features for ML, including Elliott Wave-inspired features ---

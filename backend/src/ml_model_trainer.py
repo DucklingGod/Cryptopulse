@@ -6,6 +6,9 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import os
 from dotenv import load_dotenv
+import argparse
+import requests
+from datetime import datetime
 
 load_dotenv()
 
@@ -19,27 +22,37 @@ ALPHAVANTAGE_API_KEY = os.environ.get("ALPHAVANTAGE_API_KEY")
 # Ensure model directory exists
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
+def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None, data_path_override=None):
     """Loads prepared data, scales it, and creates sequences for LSTM.
        If for_prediction is True, it loads the full dataset to get the latest sequence and the scaler.
        last_n_rows_for_pred: If provided and for_prediction is True, uses the last N rows of the original data to form the input sequence.
+       data_path_override: If provided, use this path instead of default logic.
     """
-    data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
+    if data_path_override:
+        data_path = data_path_override
+    elif symbol == "BTC_USD":
+        data_path = os.path.join(DATA_DIR, "Bitstamp_BTCUSD_d.csv")
+    else:
+        data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
     if not os.path.exists(data_path):
         print(f"Data file not found: {data_path}")
         return None, None, None, None, None, None
 
-    df = pd.read_csv(data_path, index_col="datetime", parse_dates=True)
-
-    features_to_use = ["close", "avg_sentiment_score"]
-    if not all(feature in df.columns for feature in features_to_use):
-        print(f"Missing one or more required features ({features_to_use}) in the data.")
-        if "close" in df.columns:
-            print("Proceeding with only close price.")
-            features_to_use = ["close"]
-        else:
-            print("Critical feature close is missing. Cannot proceed.")
-            return None, None, None, None, None, None
+    df = pd.read_csv(data_path)
+    print(f"[DEBUG] Loaded data from: {data_path}")
+    print(f"[DEBUG] Columns found: {list(df.columns)}")
+    # Find the close column, case-insensitive
+    close_col = next((col for col in df.columns if col.lower() == 'close'), None)
+    if not close_col:
+        print("Critical feature 'close' is missing (case-insensitive search). Cannot proceed.")
+        return None, None, None, None, None, None
+    # If avg_sentiment_score is missing, handle as before
+    sentiment_col = next((col for col in df.columns if col.lower() == 'avg_sentiment_score'), None)
+    features_to_use = [close_col]
+    if sentiment_col:
+        features_to_use.append(sentiment_col)
+    else:
+        print("[DEBUG] Sentiment column not found, proceeding with only close price.")
 
     data_for_scaling = df[features_to_use].values
     scaler = MinMaxScaler(feature_range=(0, 1))
@@ -90,12 +103,13 @@ def build_lstm_model(input_shape):
     model.compile(optimizer="adam", loss="mean_squared_error")
     return model
 
-def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
+def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32, data_path_override=None):
     """Trains the LSTM model and saves it."""
     X_train, y_train, X_test, y_test, scaler, _ = load_and_preprocess_data(
         symbol=symbol,
         sequence_length=sequence_length,
-        for_prediction=False
+        for_prediction=False,
+        data_path_override=data_path_override
     )
 
     if X_train is None or X_train.shape[0] == 0 or X_test is None or X_test.shape[0] == 0:
@@ -126,14 +140,14 @@ def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
     return model, scaler, history
 
 # --- Prediction with MC Dropout ---
-def predict_price(symbol="BTC_USD", sequence_length=60):
+def predict_price(symbol="BTC_USD", sequence_length=60, data_path_override=None):
     model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.keras")
     scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
     scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
     if not os.path.exists(model_path):
         print(f"Model file not found: {model_path}. Train the model first.")
         print("Attempting to train the model now...")
-        train_model(symbol=symbol, sequence_length=sequence_length, epochs=10, batch_size=16)
+        train_model(symbol=symbol, sequence_length=sequence_length, epochs=10, batch_size=16, data_path_override=data_path_override)
         if not os.path.exists(model_path):
             print("Failed to train and find model. Cannot predict.")
             return None
@@ -142,7 +156,8 @@ def predict_price(symbol="BTC_USD", sequence_length=60):
         symbol=symbol,
         sequence_length=sequence_length,
         for_prediction=True,
-        last_n_rows_for_pred=sequence_length
+        last_n_rows_for_pred=sequence_length,
+        data_path_override=data_path_override
     )
     if X_pred_sequence is None or scaler is None or last_sequence_df is None:
         print("Failed to load or preprocess data for prediction.")
@@ -156,12 +171,58 @@ def predict_price(symbol="BTC_USD", sequence_length=60):
     trend = "bullish" if predicted_price[0] > last_actual_price else "bearish" if predicted_price[0] < last_actual_price else "neutral"
     return {"predicted_next_close": float(predicted_price[0]), "trend": trend, "last_actual_close": float(last_actual_price)}
 
-if __name__ == "__main__":
-    print("Ensure ml_data_preparation.py has been run to generate the data file.")
-    # train_model(symbol="BTC_USD", epochs=2)
-    prediction_result = predict_price(symbol="BTC_USD")
-    if prediction_result:
-        print(f"\nPrediction for BTC_USD: {prediction_result}")
+def fetch_latest_price_from_coingecko():
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+    response = requests.get(url)
+    if response.status_code == 200:
+        price = response.json()["bitcoin"]["usd"]
+        print(f"[DEBUG] Latest BTC price from CoinGecko: {price}")
+        return price
     else:
-        print("\nFailed to get prediction for BTC_USD.")
+        print("[ERROR] Failed to fetch price from CoinGecko")
+        return None
+
+def predict_with_realtime_price(symbol="BTC_USD", sequence_length=60, data_path_override=None):
+    # Load historical data as before
+    if data_path_override:
+        data_path = data_path_override
+    elif symbol == "BTC_USD":
+        data_path = os.path.join(DATA_DIR, "Bitstamp_BTCUSD_d.csv")
+    else:
+        data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
+    df = pd.read_csv(data_path)
+    # Find the close column, case-insensitive
+    close_col = next((col for col in df.columns if col.lower() == 'close'), None)
+    if not close_col:
+        print("Critical feature 'close' is missing (case-insensitive search). Cannot proceed.")
+        return None
+    # Fetch latest price
+    latest_price = fetch_latest_price_from_coingecko()
+    if latest_price is None:
+        return None
+    # Replace the last close value with the real-time price (do not append a new row)
+    df_copy = df.copy()
+    df_copy.loc[df_copy.index[-1], close_col] = latest_price
+    # Use only the last `sequence_length` rows for prediction
+    df_recent = df_copy.tail(sequence_length)
+    # Save to a temp CSV and use as input
+    temp_path = "temp_realtime_input.csv"
+    df_recent.to_csv(temp_path, index=False)
+    return predict_price(symbol=symbol, sequence_length=sequence_length, data_path_override=temp_path)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--symbol", type=str, default="BTC_USD", help="Symbol to train/predict")
+    parser.add_argument("--data_path", type=str, default=None, help="Path to data file (overrides default)")
+    parser.add_argument("--realtime", action="store_true", help="Fetch latest price from CoinGecko for prediction")
+    args = parser.parse_args()
+    print("Ensure ml_data_preparation.py has been run to generate the data file.")
+    if args.realtime:
+        prediction_result = predict_with_realtime_price(symbol=args.symbol, data_path_override=args.data_path)
+    else:
+        prediction_result = predict_price(symbol=args.symbol, data_path_override=args.data_path)
+    if prediction_result:
+        print(f"\nPrediction for {args.symbol}: {prediction_result}")
+    else:
+        print(f"\nFailed to get prediction for {args.symbol}.")
 

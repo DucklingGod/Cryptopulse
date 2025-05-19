@@ -27,7 +27,7 @@ class RiskCalculator:
     def __init__(self, symbol="BTC_USD"):
         self.symbol = symbol
         if symbol == "BTC_USD":
-            self.data_path = "/app/data/btc-usd-max.csv"
+            self.data_path = "/app/data/Bitstamp_BTCUSD_d.csv"
         else:
             data_dir = os.path.join(os.path.dirname(__file__), '../../data')
             filename = f"ml_prepared_data_{symbol}.csv"
@@ -44,10 +44,7 @@ class RiskCalculator:
             raise FileNotFoundError(f"Data file not found: {self.data_path}")
         df = pd.read_csv(self.data_path)
         print(f"[DEBUG] Columns in {self.data_path}: {list(df.columns)}")
-        # If BTC_USD, set close as next day's open
-        if self.symbol == "BTC_USD" and 'open' in df.columns:
-            df['close'] = df['open'].shift(-1)
-            df = df.iloc[:-1]  # Drop last row with NaN close
+        # For Bitstamp_BTCUSD_d.csv, use the 'close' column as-is
         if 'close' not in df.columns:
             raise ValueError(f"CSV file {self.data_path} must contain a 'close' column. Columns found: {list(df.columns)}")
         self.df = df
