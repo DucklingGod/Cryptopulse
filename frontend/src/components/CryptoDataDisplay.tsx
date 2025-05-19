@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import './CryptoDataDisplay.css';
-import { Coin, NewsItem, HistoricalData, HistoricalValue } from '../types';
+import { Coin, NewsItem } from '../types'; // Removed HistoricalValue
 import RiskAssessment from './RiskAssessment';
 import TradingViewChart from './TradingViewChart';
 
 const CryptoDataDisplay = () => {
   const [cryptoData, setCryptoData] = useState<Coin[]>([]);
   const [newsData, setNewsData] = useState<NewsItem[]>([]);
-  const [historicalData, setHistoricalData] = useState<HistoricalData>({});
   const [selectedCoin, setSelectedCoin] = useState('BTC/USD');
   const [tradingViewSymbol, setTradingViewSymbol] = useState('BINANCE:BTCUSDT');
   const [loading, setLoading] = useState({
@@ -69,8 +68,7 @@ const CryptoDataDisplay = () => {
       if (!selectedCoin) return;
       try {
         setLoading(prev => ({ ...prev, historical: true }));
-        const response = await axios.get<HistoricalData>(`/api/twelvedata/time_series?symbol=${selectedCoin}`);
-        setHistoricalData(response.data);
+        // Removed unused axios call and setHistoricalData
         setLoading(prev => ({ ...prev, historical: false }));
       } catch (err) {
         console.error('Error fetching historical data:', err);
