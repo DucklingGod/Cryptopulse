@@ -6,6 +6,8 @@ import { Coin, NewsItem } from '../types'; // Removed HistoricalValue
 import RiskAssessment from './RiskAssessment';
 import TradingViewChart from './TradingViewChart';
 
+const apiBaseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL;
+
 const CryptoDataDisplay = () => {
   const [cryptoData, setCryptoData] = useState<Coin[]>([]);
   const [newsData, setNewsData] = useState<NewsItem[]>([]);
@@ -27,7 +29,7 @@ const CryptoDataDisplay = () => {
     const fetchCryptoData = async () => {
       try {
         setLoading(prev => ({ ...prev, crypto: true }));
-        const response = await axios.get<{ data: Coin[] }>('/api/cmc/listings?limit=100');
+        const response = await axios.get<{ data: Coin[] }>(`${apiBaseUrl}/cmc/listings?limit=100`);
         setCryptoData(response.data.data);
         setLoading(prev => ({ ...prev, crypto: false }));
       } catch (err) {
@@ -47,7 +49,7 @@ const CryptoDataDisplay = () => {
     const fetchNewsData = async () => {
       try {
         setLoading(prev => ({ ...prev, news: true }));
-        const response = await axios.get<{ results: NewsItem[] }>('/api/cryptopanic/posts');
+        const response = await axios.get<{ results: NewsItem[] }>(`${apiBaseUrl}/cryptopanic/posts`);
         setNewsData(response.data.results);
         setLoading(prev => ({ ...prev, news: false }));
       } catch (err) {
@@ -105,7 +107,7 @@ const CryptoDataDisplay = () => {
       try {
         // Extract symbol (e.g., BTC from BTC/USD)
         const symbol = selectedCoin.split('/')[0];
-        const response = await axios.get(`/api/fundamental/${symbol}`);
+        const response = await axios.get(`${apiBaseUrl}/fundamental/${symbol}`);
         setFundamentalData(response.data);
       } catch (err: any) {
         setErrorFundamental('Failed to fetch fundamental data.');
@@ -129,7 +131,7 @@ const CryptoDataDisplay = () => {
       setDayTradingInsight(null);
       try {
         const symbol = selectedCoin.replace('/', '_');
-        const response = await axios.get(`/api/daytrading/insight?symbol=${symbol}`);
+        const response = await axios.get(`${apiBaseUrl}/daytrading/insight?symbol=${symbol}`);
         setDayTradingInsight(response.data);
       } catch (err: any) {
         setErrorDayTrading('Failed to fetch day trading insight.');

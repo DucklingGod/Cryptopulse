@@ -23,7 +23,7 @@ body {
 
 .light-theme .app-header {
   background-color: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #cfcccc;
 }
 
 .light-theme .app-header .logo {
@@ -39,7 +39,7 @@ body {
 }
 
 .light-theme .user-controls input[type="search"] {
-  border: 1px solid #ccc;
+  border: 1px solid #a8a8a8;
   background-color: #fff;
   color: #333;
 }
@@ -55,7 +55,7 @@ body {
 }
 
 .light-theme .dashboard-section {
-  background-color: #f8f9fa;
+  background-color: #1876d4;
   border: 1px solid #e0e0e0;
   margin-bottom: 20px;
   padding: 20px;
