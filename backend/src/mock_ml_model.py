@@ -76,10 +76,13 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
 
 # --- Data Loading (updated) ---
 def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
-    data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
+    # Always use btc-usd-max.csv for BTC_USD
+    if symbol == "BTC_USD":
+        data_path = os.path.join(os.path.dirname(__file__), "../data/btc-usd-max.csv")
+    else:
+        data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
     if not os.path.exists(data_path):
-        print(f"[INFO] Data file not found for {symbol}, fetching from Alpha Vantage...")
-        fetch_and_save_alphavantage(symbol)
+        raise FileNotFoundError(f"Data file not found: {data_path}")
     df = pd.read_csv(data_path)
     # --- Use all relevant features for ML, including Elliott Wave-inspired features ---
     # List of features to use (add more as needed)
