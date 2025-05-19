@@ -34,7 +34,7 @@ opt_einsum
 optree
 packaging
 pandas>=1.5.0
-protobuf==3.20.3
+protobuf==3.19.6
 pycparser
 Pygments
 PyMySQL
