@@ -47,7 +47,7 @@ scikit-learn==1.6.1
 scipy==1.15.3
 six==1.17.0
 SQLAlchemy==2.0.40
-tensorboard==2.19.0
+tensorboard==2.11.2
 tensorboard-data-server==0.7.2
 tensorflow==2.11.0
 termcolor==3.1.0
