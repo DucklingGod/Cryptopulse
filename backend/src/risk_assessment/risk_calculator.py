@@ -26,9 +26,13 @@ class RiskCalculator:
     
     def __init__(self, symbol="BTC_USD"):
         self.symbol = symbol
-        data_dir = os.path.join(os.path.dirname(__file__), '../../data')
-        filename = f"ml_prepared_data_{symbol}.csv"
-        self.data_path = os.path.normpath(os.path.join(data_dir, filename))
+        if symbol == "BTC_USD":
+            self.data_path = "/app/data/btc-usd-max.csv"
+        else:
+            data_dir = os.path.join(os.path.dirname(__file__), '../../data')
+            filename = f"ml_prepared_data_{symbol}.csv"
+            self.data_path = os.path.normpath(os.path.join(data_dir, filename))
+        print(f"[DEBUG] RiskCalculator loading data from: {self.data_path}")
         if not os.path.exists(self.data_path):
             raise FileNotFoundError(f"Data file not found: {self.data_path}")
         self.fear_greed_cache = {"timestamp": None, "data": None}
@@ -38,10 +42,18 @@ class RiskCalculator:
         """Load and prepare data for risk assessment"""
         if not os.path.exists(self.data_path):
             raise FileNotFoundError(f"Data file not found: {self.data_path}")
-        
-        self.df = pd.read_csv(self.data_path, index_col="datetime", parse_dates=True)
-        # Sort by date to ensure chronological order
-        self.df = self.df.sort_index()
+        df = pd.read_csv(self.data_path)
+        print(f"[DEBUG] Columns in {self.data_path}: {list(df.columns)}")
+        # If BTC_USD, set close as next day's open
+        if self.symbol == "BTC_USD" and 'open' in df.columns:
+            df['close'] = df['open'].shift(-1)
+            df = df.iloc[:-1]  # Drop last row with NaN close
+        if 'close' not in df.columns:
+            raise ValueError(f"CSV file {self.data_path} must contain a 'close' column. Columns found: {list(df.columns)}")
+        self.df = df
+        if 'datetime' in self.df.columns:
+            self.df.set_index('datetime', inplace=True)
+            self.df = self.df.sort_index()
     
     def calculate_volatility(self, window=14):
         """Calculate price volatility using standard deviation of returns"""
