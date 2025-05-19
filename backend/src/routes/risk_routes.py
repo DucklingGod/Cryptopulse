@@ -30,7 +30,9 @@ def get_risk_assessment():
     except FileNotFoundError as fnf:
         return jsonify({"error": str(fnf)}), 404
     except Exception as e:
+        import traceback
         print(f"Error in risk assessment: {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @risk_bp.route("/fear_greed", methods=["GET"])

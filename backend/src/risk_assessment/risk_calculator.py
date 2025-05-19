@@ -34,6 +34,7 @@ class RiskCalculator:
             self.data_path = os.path.normpath(os.path.join(data_dir, filename))
         print(f"[DEBUG] RiskCalculator loading data from: {self.data_path}")
         if not os.path.exists(self.data_path):
+            print(f"[ERROR] Data file does not exist: {self.data_path}")
             raise FileNotFoundError(f"Data file not found: {self.data_path}")
         self.fear_greed_cache = {"timestamp": None, "data": None}
         self.load_data()
