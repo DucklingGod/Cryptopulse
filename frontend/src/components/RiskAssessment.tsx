@@ -19,12 +19,14 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
     fearGreed: null as string | null
   });
 
+  const apiBaseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL;
+
   // Fetch risk assessment data
   useEffect(() => {
     const fetchRiskData = async () => {
       try {
         setLoading(prev => ({ ...prev, risk: true }));
-        const response = await axios.get<RiskAssessmentType>(`/api/risk/assessment?symbol=${symbol}`);
+        const response = await axios.get<RiskAssessmentType>(`${apiBaseUrl}/risk/assessment?symbol=${symbol}`);
         // TEMP: Log backend response for debugging
         console.log('Risk assessment API response:', response.data);
         setRiskData(response.data);
@@ -47,12 +49,12 @@ const RiskAssessment: React.FC<RiskAssessmentProps> = ({ symbol }) => {
     const fetchFearGreedData = async () => {
       try {
         setLoading(prev => ({ ...prev, fearGreed: true }));
-        const response = await axios.get<FearGreedIndex>('/api/risk/fear_greed');
+        const response = await axios.get<FearGreedIndex>(`${apiBaseUrl}/risk/fear_greed`);
         setFearGreedData(response.data);
         setLoading(prev => ({ ...prev, fearGreed: false }));
       } catch (err) {
-        console.error('Error fetching Fear & Greed Index data:', err);
-        setError(prev => ({ ...prev, fearGreed: 'Failed to fetch Fear & Greed Index data' }));
+        console.error('Error fetching Fear & Greed Index:', err);
+        setError(prev => ({ ...prev, fearGreed: 'Failed to fetch Fear & Greed Index' }));
         setLoading(prev => ({ ...prev, fearGreed: false }));
       }
     };
