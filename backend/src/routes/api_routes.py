@@ -4,6 +4,7 @@ import os
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 # Import from mock ML model instead of the real one
 from src.mock_ml_model import predict_price
+import traceback
 
 api_bp = Blueprint("api_bp", __name__, url_prefix="/api")
 fundamental_bp = Blueprint('fundamental', __name__)
@@ -62,7 +63,9 @@ def get_cryptopanic_posts():
                     sentiment = sia.polarity_scores(post["title"])
                     post["sentiment"] = sentiment
         return jsonify(data)
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
+        print("Exception in /cryptopanic/posts:")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route("/twelvedata/time_series", methods=["GET"])

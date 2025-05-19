@@ -10,6 +10,8 @@ load_dotenv()
 
 # Base URL for our own backend API
 BACKEND_API_BASE_URL = os.environ.get("BACKEND_API_BASE_URL", "http://127.0.0.1:5000/api")
+CRYPTOPANIC_API_KEY = os.environ.get("CRYPTOPANIC_API_KEY")
+CRYPTOPANIC_BASE_URL = os.environ.get("CRYPTOPANIC_BASE_URL", "https://cryptopanic.com/api/v1")
 
 def fetch_historical_prices(symbol="BTC/USD", interval="1day", outputsize="365"):
     """Fetches historical price data from our backend API."""
@@ -55,11 +57,11 @@ def fetch_historical_prices(symbol="BTC/USD", interval="1day", outputsize="365")
         return pd.DataFrame()
 
 def fetch_news_with_sentiment(currencies=None, limit_pages=1):
-    """Fetches news data with sentiment from our backend API."""
+    """Fetches news data with sentiment from CryptoPanic API using API key from environment."""
     all_news = []
     page = 1
-    next_page_url = f"{BACKEND_API_BASE_URL}/cryptopanic/posts"
-    initial_params = {"public": "true", "regions": "en"}
+    next_page_url = f"{CRYPTOPANIC_BASE_URL}/posts"
+    initial_params = {"auth_token": CRYPTOPANIC_API_KEY, "public": "true", "regions": "en"}
     if currencies:
         initial_params["currencies"] = currencies
 
@@ -69,22 +71,20 @@ def fetch_news_with_sentiment(currencies=None, limit_pages=1):
     while current_url and page <= limit_pages:
         try:
             print(f"Fetching news page: {page}, URL: {current_url} with params: {current_params_for_get if page == 1 else 'None (using full next_page_url)'}")
-            if page > 1 and next_page_url: 
+            if page > 1 and next_page_url:
                 response = requests.get(next_page_url)
-                current_params_for_get = {} 
+                current_params_for_get = {}
             else:
                 response = requests.get(current_url, params=current_params_for_get)
-            
             response.raise_for_status()
             data = response.json()
             if "results" in data:
                 all_news.extend(data["results"])
-            
-            next_page_url = data.get("next") 
-            current_url = next_page_url 
+            next_page_url = data.get("next")
+            current_url = next_page_url
             page += 1
-            if next_page_url: 
-                time.sleep(1)  
+            if next_page_url:
+                time.sleep(1)
         except requests.exceptions.RequestException as e:
             print(f"Request failed for news: {e}")
             break
@@ -94,11 +94,9 @@ def fetch_news_with_sentiment(currencies=None, limit_pages=1):
         except Exception as e:
             print(f"An unexpected error occurred while fetching news: {e}")
             break
-            
     df = pd.DataFrame(all_news)
     if not df.empty and "published_at" in df.columns and "sentiment" in df.columns and "title" in df.columns:
         df["published_at"] = pd.to_datetime(df["published_at"])
-        # Ensure published_at is timezone-naive before further processing
         if df["published_at"].dt.tz is not None:
             df["published_at"] = df["published_at"].dt.tz_localize(None)
         df["sentiment_score"] = df["sentiment"].apply(lambda x: x.get("compound") if isinstance(x, dict) else None)

@@ -55,10 +55,9 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
     # Convert to DataFrame
     df = pd.DataFrame.from_dict(ts, orient="index")
     df.index = pd.to_datetime(df.index)
-    df = df.sort_index()
-    # Use '4a. close (USD)' or fallback to '4b. close (USD)' as the close price
+    df = df.sort_index()    # Use '4a. close (USD)', '4b. close (USD)', or fallback to '4. close' as the close price
     close_col = None
-    for candidate in ["4a. close (USD)", "4b. close (USD)"]:
+    for candidate in ["4a. close (USD)", "4b. close (USD)", "4. close"]:
         if candidate in df.columns:
             close_col = candidate
             break
@@ -197,6 +196,6 @@ def prepare_all_coins(symbols, market="USD"):
 
 # For testing
 if __name__ == "__main__":
-    print("Testing ML prediction module")
-    prediction = predict_price("BTC_USD")
-    print(f"Prediction for BTC_USD: {prediction}")
+    print("Training ML model for BTC_USD...")
+    model, scaler, history = train_model("BTC_USD")
+    print("Training complete. Model and scaler saved.")
