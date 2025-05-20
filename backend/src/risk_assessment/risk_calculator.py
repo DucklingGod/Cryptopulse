@@ -70,7 +70,7 @@ class RiskCalculator:
     def calculate_sentiment_risk(self, window=7):
         """Calculate risk based on sentiment trends"""
         if 'avg_sentiment_score' not in self.df.columns or self.df['avg_sentiment_score'].isna().all():
-            # If sentiment data is missing, return a neutral score
+            print("[WARNING] 'avg_sentiment_score' column missing or all values are NaN. Returning neutral sentiment risk (50).")
             return 50
         
         # Get recent sentiment scores
@@ -167,11 +167,14 @@ class RiskCalculator:
         volatility_risk = self.calculate_volatility()
         sentiment_risk = self.calculate_sentiment_risk()
         prediction_risk = self.get_ml_prediction_risk(ml_prediction)
-        
+        print(f"[DEBUG] Volatility risk: {volatility_risk}")
+        print(f"[DEBUG] Sentiment risk: {sentiment_risk}")
+        print(f"[DEBUG] Prediction risk: {prediction_risk}")
         # Get Fear & Greed Index
         fear_greed_data = self.get_fear_greed_index()
-        # Convert fear & greed to risk (extreme fear = high risk, extreme greed = moderate risk)
         fear_greed_value = fear_greed_data["value"]
+        print(f"[DEBUG] Fear & Greed Index value: {fear_greed_value}")
+        # Convert fear & greed to risk (extreme fear = high risk, extreme greed = moderate risk)
         # Adjust scale: 0 (extreme fear) = 100 risk, 100 (extreme greed) = 50 risk
         fear_greed_risk = 100 - (fear_greed_value * 0.5)
         

@@ -23,6 +23,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow import keras
 import requests
+import joblib
 
 # Load environment variables from .env file
 load_dotenv()
@@ -76,11 +77,11 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
 
 # --- Data Loading (updated) ---
 def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
-    # Always use absolute path for Bitstamp_BTCUSD_d.csv for BTC_USD
+    # Always use absolute path for Bitstamp_BTCUSD_d_ml.csv for BTC_USD
     if symbol == "BTC_USD":
-        # Use Docker path if running in Docker, else use local path
-        docker_path = "/app/data/Bitstamp_BTCUSD_d.csv"
-        local_path = os.path.join(DATA_DIR, "Bitstamp_BTCUSD_d.csv")
+        # Use Docker path if running in Docker, else use backend/data path
+        docker_path = "/app/data/Bitstamp_BTCUSD_d_ml.csv"
+        local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/Bitstamp_BTCUSD_d_ml.csv"))
         data_path = docker_path if os.path.exists(docker_path) else local_path
     else:
         data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
@@ -89,6 +90,13 @@ def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0
         raise FileNotFoundError(f"Data file not found: {data_path}")
     df = pd.read_csv(data_path)
     print(f"[DEBUG] Columns in {data_path}: {list(df.columns)}")
+    # Drop rows where 'close' is not a number
+    df = df[pd.to_numeric(df['close'], errors='coerce').notnull()].reset_index(drop=True)
+    df['close'] = df['close'].astype(float)
+    # If data is in reverse chronological order (newest first), reverse it to chronological (oldest first)
+    if pd.to_datetime(df.iloc[0][df.columns[0]]) > pd.to_datetime(df.iloc[-1][df.columns[0]]):
+        print("[INFO] Detected reverse chronological order. Reversing DataFrame to chronological order.")
+        df = df.iloc[::-1].reset_index(drop=True)
     # For Bitstamp_BTCUSD_d.csv, use the 'close' column as-is
     if 'close' not in df.columns:
         raise ValueError(f"CSV file {data_path} must contain a 'close' column. Columns found: {list(df.columns)}")
@@ -150,31 +158,57 @@ def train_model(symbol="BTC_USD", sequence_length=60, epochs=50, batch_size=32):
     )
     os.makedirs(MODEL_DIR, exist_ok=True)
     model.save(os.path.join(MODEL_DIR, f"lstm_model_{symbol}.h5"))
-    np.save(os.path.join(MODEL_DIR, f"scaler_{symbol}.npy"), scaler.min_, allow_pickle=True)
-    np.save(os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy"), scaler.scale_, allow_pickle=True)
+    # Save the entire scaler object using joblib
+    joblib.dump(scaler, os.path.join(MODEL_DIR, f"scaler_{symbol}.joblib"))
     return model, scaler, history
 
-# --- Prediction with MC Dropout ---
+# --- Fetch latest price from CoinGecko ---
+def fetch_latest_price_from_coingecko(symbol="BTC_USD"):
+    # Only supports BTC_USD for now
+    if symbol != "BTC_USD":
+        raise NotImplementedError("Only BTC_USD is supported for real-time price fetch.")
+    url = "https://api.coingecko.com/api/v3/simple/price"
+    params = {"ids": "bitcoin", "vs_currencies": "usd"}
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return float(data["bitcoin"]["usd"])
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch real-time price from CoinGecko: {e}")
+        return None
+
+# --- Prediction with MC Dropout and real-time price ---
 def predict_price(symbol="BTC_USD", sequence_length=60, mc_dropout_passes=30):
     model_path = os.path.join(MODEL_DIR, f"lstm_model_{symbol}.h5")
-    scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.npy")
-    scaler_scale_path = os.path.join(MODEL_DIR, f"scaler_scale_{symbol}.npy")
+    scaler_path = os.path.join(MODEL_DIR, f"scaler_{symbol}.joblib")
     print(f"[DEBUG] Loading model from: {model_path}")
     print(f"[DEBUG] File exists: {os.path.exists(model_path)}")
     print(f"[DEBUG] File size: {os.path.getsize(model_path) if os.path.exists(model_path) else 'N/A'}")
     model = keras.models.load_model(model_path)
-    scaler = MinMaxScaler()
-    scaler.min_ = np.load(scaler_path, allow_pickle=True)
-    scaler.scale_ = np.load(scaler_scale_path, allow_pickle=True)
+    scaler = joblib.load(scaler_path)
+    # Load data
     _, _, _, X_pred, _, df = load_and_preprocess_data(symbol, sequence_length, for_prediction=True)
+    # Fetch real-time price and replace last close
+    latest_price = fetch_latest_price_from_coingecko(symbol)
+    if latest_price is not None:
+        print(f"[INFO] Using real-time price from CoinGecko: {latest_price}")
+        df = df.copy()
+        df.loc[df.index[-1], 'close'] = latest_price
+        # Recreate X_pred with updated close
+        features_to_use = [f for f in df.columns if f != 'date']
+        data_for_scaling = df[features_to_use].values
+        scaler.fit(data_for_scaling)
+        scaled_input_sequence = scaler.transform(data_for_scaling[-sequence_length:])
+        X_pred = np.reshape(scaled_input_sequence, (1, sequence_length, len(features_to_use)))
+    else:
+        print("[WARN] Falling back to last CSV close price for prediction.")
     # MC Dropout: run prediction multiple times with dropout enabled
-    # Enable dropout at inference by setting training=True
     preds = []
     for _ in range(mc_dropout_passes):
         pred_scaled = model(X_pred, training=True).numpy()[0][0]
-        # Create a dummy array with the same shape as our feature set
         dummy_array = np.zeros((1, X_pred.shape[2]))
-        dummy_array[0, 0] = pred_scaled  # Set the first feature (close price)
+        dummy_array[0, 0] = pred_scaled
         pred_price = scaler.inverse_transform(dummy_array)[0][0]
         preds.append(pred_price)
     preds = np.array(preds)
@@ -182,7 +216,6 @@ def predict_price(symbol="BTC_USD", sequence_length=60, mc_dropout_passes=30):
     pred_std = float(np.std(preds))
     last_actual_close = df['close'].iloc[-1]
     trend = "bullish" if pred_mean > last_actual_close else "bearish"
-    # Confidence: 1 - (uncertainty / |predicted change|), clipped to [0,1]
     pred_change = abs(pred_mean - last_actual_close)
     confidence = 1.0 - min(pred_std / (pred_change + 1e-8), 1.0) if pred_change > 0 else 0.0
     return {

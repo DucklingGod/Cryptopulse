@@ -6,7 +6,7 @@ import { Coin, NewsItem } from '../types'; // Removed HistoricalValue
 import RiskAssessment from './RiskAssessment';
 import TradingViewChart from './TradingViewChart';
 
-const apiBaseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const CryptoDataDisplay = () => {
   const [cryptoData, setCryptoData] = useState<Coin[]>([]);
