@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from src.risk_assessment.risk_calculator import RiskCalculator
 # Import from mock ML model instead of the real one
 from src.mock_ml_model import predict_price
+import logging
 
 risk_bp = Blueprint("risk_bp", __name__, url_prefix="/api/risk")
 
@@ -28,12 +29,13 @@ def get_risk_assessment():
         
         return jsonify(risk_assessment)
     except FileNotFoundError as fnf:
+        logging.error(f"FileNotFoundError in /api/risk/assessment: {fnf}", exc_info=True)
         return jsonify({"error": str(fnf)}), 404
     except Exception as e:
+        logging.error(f"Exception in /api/risk/assessment: {e}", exc_info=True)
         import traceback
-        print(f"Error in risk assessment: {e}")
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        tb = traceback.format_exc()
+        return jsonify({"error": str(e), "traceback": tb}), 500
 
 @risk_bp.route("/fear_greed", methods=["GET"])
 def get_fear_greed_index():

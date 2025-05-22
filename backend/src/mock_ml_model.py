@@ -77,12 +77,12 @@ def fetch_and_save_alphavantage(symbol="BTC_USD", market="USD", outputsize="full
 
 # --- Data Loading (updated) ---
 def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0.8, for_prediction=False, last_n_rows_for_pred=None):
-    # Always use absolute path for Bitstamp_BTCUSD_d_ml.csv for BTC_USD
+    # Always use absolute path for Bitstamp_BTCUSD_d_ml_with_sentiment_realtime.csv for BTC_USD real-time
     if symbol == "BTC_USD":
-        # Use Docker path if running in Docker, else use backend/data path
-        docker_path = "/app/data/Bitstamp_BTCUSD_d_ml.csv"
-        local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/Bitstamp_BTCUSD_d_ml.csv"))
-        data_path = docker_path if os.path.exists(docker_path) else local_path
+        # Use the real-time merged file if it exists
+        realtime_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/Bitstamp_BTCUSD_d_ml_with_sentiment_realtime.csv"))
+        fallback_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/Bitstamp_BTCUSD_d_ml_with_sentiment.csv"))
+        data_path = realtime_path if os.path.exists(realtime_path) else fallback_path
     else:
         data_path = os.path.join(DATA_DIR, f"ml_prepared_data_{symbol}.csv")
     print(f"[DEBUG] Loading data from: {data_path}")
@@ -97,24 +97,8 @@ def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0
     if pd.to_datetime(df.iloc[0][df.columns[0]]) > pd.to_datetime(df.iloc[-1][df.columns[0]]):
         print("[INFO] Detected reverse chronological order. Reversing DataFrame to chronological order.")
         df = df.iloc[::-1].reset_index(drop=True)
-    # For Bitstamp_BTCUSD_d.csv, use the 'close' column as-is
-    if 'close' not in df.columns:
-        raise ValueError(f"CSV file {data_path} must contain a 'close' column. Columns found: {list(df.columns)}")
-    # --- Use all relevant features for ML, including Elliott Wave-inspired features ---
-    # List of features to use (add more as needed)
-    features_to_use = [
-        'close',
-        'avg_sentiment_score',
-        'rsi', 'macd', 'macd_signal', 'macd_diff',
-        'bb_high', 'bb_low', 'bb_mid', 'bb_width',
-        'ema_20', 'ema_50', 'sma_20', 'sma_50',
-        'doji', 'hammer', 'bullish_engulfing',
-        'price_change_pct', 'close_lag_1', 'close_lag_3', 'close_lag_7',
-        'sentiment_lag_1', 'sentiment_lag_3', 'sentiment_lag_7',
-        'swing_high', 'swing_low', 'zigzag', 'wave_count'
-    ]
-    # Only keep features that exist in the DataFrame
-    features_to_use = [f for f in features_to_use if f in df.columns]
+    # Use all numeric columns except 'date' as features
+    features_to_use = [col for col in df.columns if col != 'date' and pd.api.types.is_numeric_dtype(df[col])]
     if 'close' not in features_to_use:
         raise ValueError("CSV must contain a 'close' column.")
     data_for_scaling = df[features_to_use].values
@@ -123,7 +107,7 @@ def load_and_preprocess_data(symbol="BTC_USD", sequence_length=60, train_split=0
     X, y = [], []
     for i in range(sequence_length, len(scaled)):
         X.append(scaled[i-sequence_length:i, :])
-        y.append(scaled[i, 0])  # Predicting 'close'
+        y.append(scaled[i, features_to_use.index('close')])  # Predicting 'close'
     X, y = np.array(X), np.array(y)
     split = int(len(X) * train_split)
     if for_prediction:
@@ -241,6 +225,15 @@ def prepare_all_coins(symbols, market="USD"):
 
 # For testing
 if __name__ == "__main__":
-    print("Training ML model for BTC_USD...")
+    # Always retrain the model before prediction to ensure input shape matches new features
+    print("\n[INFO] Training ML model for BTC_USD with current features...")
     model, scaler, history = train_model("BTC_USD")
     print("Training complete. Model and scaler saved.")
+    print("\n[INFO] Running real-time prediction using Bitstamp_BTCUSD_d_ml_with_sentiment_realtime.csv...")
+    result = predict_price("BTC_USD")
+    print("\n[RESULT] Real-time ML Prediction for BTC/USD:")
+    print(f"  Last Actual Close: {result['last_actual_close']}")
+    print(f"  Predicted Next Close: {result['predicted_next_close']}")
+    print(f"  Trend: {result['trend']}")
+    print(f"  Confidence: {result['confidence']:.2f}")
+    print(f"  Uncertainty (std): {result['uncertainty']:.2f}")

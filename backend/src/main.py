@@ -49,6 +49,16 @@ def serve(path):
 def cors_test():
     return {"msg": "CORS test"}
 
+@app.route('/routes')
+def list_routes():
+    import urllib
+    output = []
+    for rule in app.url_map.iter_rules():
+        methods = ','.join(rule.methods)
+        line = urllib.parse.unquote(f"{rule.endpoint}: {rule.rule} [{methods}]")
+        output.append(line)
+    return "<br>".join(sorted(output))
+
 
 if __name__ == '__main__':
     # Only use app.run for local development

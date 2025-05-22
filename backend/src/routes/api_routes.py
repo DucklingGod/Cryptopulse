@@ -71,6 +71,9 @@ def get_cryptopanic_posts():
                     sentiment = sia.polarity_scores(post["title"])
                     post["sentiment"] = sentiment
         return jsonify(data)
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching CryptoPanic posts: {e}")
+        return jsonify({"error": "Failed to fetch news from CryptoPanic. Please try again later."}), 502
     except Exception as e:
         print("Exception in /cryptopanic/posts:")
         traceback.print_exc()
@@ -239,6 +242,9 @@ def get_daytrading_insight():
             'confidence': confidence
         })
     except Exception as e:
+        import traceback
+        print("Exception in /daytrading/insight:")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # Add more routes for other specific API calls as needed

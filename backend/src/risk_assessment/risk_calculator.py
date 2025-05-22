@@ -27,7 +27,8 @@ class RiskCalculator:
     def __init__(self, symbol="BTC_USD"):
         self.symbol = symbol
         if symbol == "BTC_USD":
-            self.data_path = "/app/data/Bitstamp_BTCUSD_d.csv"
+            # Use the real-time merged sentiment+price file by default
+            self.data_path = "/app/data/Bitstamp_BTCUSD_d_ml_with_sentiment_realtime.csv"
         else:
             data_dir = os.path.join(os.path.dirname(__file__), '../../data')
             filename = f"ml_prepared_data_{symbol}.csv"

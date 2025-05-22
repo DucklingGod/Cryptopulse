@@ -15,12 +15,15 @@ COPY . .
 # Copy data and models folders for ML model and data access (these will overwrite any empty/incorrect ones from above)
 COPY data/ ./data/
 COPY models/ ./models/
+COPY models/ ./backend/models/
+COPY src/run_daily_pipeline.py ./src/run_daily_pipeline.py
 
 # Debug: list model files
 RUN ls -lh ./models/
+RUN ls -lh ./data/
 
 # Expose port (Cloud Run uses $PORT)
 EXPOSE 8080
 
-# Start the app
-CMD exec gunicorn -b :$PORT src.main:app
+# Default entrypoint for Cloud Run Job (can be overridden)
+CMD ["python", "src/run_daily_pipeline.py"]
