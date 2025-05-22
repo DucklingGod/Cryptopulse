@@ -37,7 +37,7 @@ const Header = () => {
   return (
     <header className="app-header">
       <div className="logo">
-        <img src={logoImg} alt="CryptoDash Logo" style={{ height: 128, width: 'auto', maxWidth: 680 }} />
+        <img src={logoImg} alt="CryptoDash Logo" style={{ height: 99, width: 'auto', maxWidth: 430 }} />
       </div>
       <nav className="dropdown-nav">
         <button className="dropdown-toggle" onClick={() => setMenuOpen((open) => !open)}>
