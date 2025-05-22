@@ -10,10 +10,18 @@
   margin-bottom: 20px;
 }
 
-.dashboard-header h1 {
+.dark-theme .dashboard-header h1 {
   margin: 0;
   font-size: 1.8rem;
   color: #ffffff;
+  font-weight: 700;
+}
+
+.light-theme .dashboard-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #ff8800;
+  font-weight: 700;
 }
 
 .coin-selector {

@@ -89,7 +89,7 @@ body {
 }
 
 .dark-theme .app-header .logo {
-  color: #61dafb; /* A bright color for logo, like React's blue */
+  color: #ff9800; /* A bright color for logo, like React's blue */
 }
 
 .dark-theme .app-header nav a {
@@ -97,7 +97,7 @@ body {
 }
 
 .dark-theme .app-header nav a:hover {
-  color: #61dafb;
+  color: #ff9800;
 }
 
 .dark-theme .user-controls input[type="search"] {
@@ -107,8 +107,7 @@ body {
 }
 
 .dark-theme .user-controls button {
-  background-color: #61dafb;
-  color: #121212;
+  background-color: #ff9800; /* Accent color for buttons */
   border: none;
 }
 
@@ -132,7 +131,7 @@ body {
 }
 
 .dark-theme .app-footer a {
-  color: #61dafb;
+  color: #ff9800;
 }
 
 /* Header Styles */
@@ -141,6 +140,14 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
+}
+
+.logo {
+  order: 0;
+}
+
+.dropdown-nav {
+  order: -11;
 }
 
 .app-header .logo {
@@ -404,3 +411,12 @@ body {
     font-size: 1.4rem;
 }
 
+@media (max-width: 768px) {
+  .app-header .dropdown-nav {
+    order: 1;
+  }
+
+  .app-header .logo {
+    order: 0;
+  }
+}
