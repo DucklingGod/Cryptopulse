@@ -105,6 +105,8 @@
   margin-top: 0;
   margin-bottom: 15px;
   color: #ffffff;
+  font-weight: 500;
+  font-size: 1.4rem;
 }
 
 .metric {
@@ -113,8 +115,14 @@
   margin-bottom: 10px;
 }
 
-.metric-label {
-  color: #a0a0a0;
+.light-theme .metric-label {
+  color: #505050;
+  font-weight: 500;
+}
+
+.dark-theme .metric-label {
+  color: #ff8d2f;
+  font-weight: 500;
 }
 
 .metric-value {
@@ -139,7 +147,7 @@
 
 .chart-tab.active {
   color: #ffffff;
-  border-bottom: 2px solid #61dafb;
+  border-bottom: 2px solid #646464;
 }
 
 /* Price Variation Section */
@@ -189,9 +197,16 @@
   flex-direction: column;
 }
 
-.insight-label {
+.dark-theme .insight-label {
   color: #a0a0a0;
   margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.light-theme .insight-label {
+  color: #3b3b3b;
+  margin-bottom: 5px;
+  font-weight: 500;
 }
 
 .insight-value {
@@ -229,13 +244,20 @@
   font-size: 1.1rem;
 }
 
-.news-item h3 a {
+.dark-theme .news-item h3 a {
   color: #e0e0e0;
   text-decoration: none;
 }
 
+.light-theme .news-item h3 a {
+  color: #4d4d4d;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+
 .news-item h3 a:hover {
-  color: #61dafb;
+  color: #ff6600;
 }
 
 .news-meta {
@@ -246,7 +268,7 @@
 
 .news-currencies {
   font-size: 0.9rem;
-  color: #61dafb;
+  color: #ff6600;
 }
 
 /* Crypto Table Section */
@@ -266,7 +288,7 @@
 }
 
 .crypto-table th {
-  color: #a0a0a0;
+  color: #707070;
   font-weight: 600;
 }
 
@@ -274,13 +296,20 @@
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.crypto-table a {
+.dark-theme .crypto-table a {
   color: #e0e0e0;
   text-decoration: none;
+  font-weight: 500;
+}
+
+.light-theme .crypto-table a {
+  color: #707070;
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .crypto-table a:hover {
-  color: #61dafb;
+  color: #ff6600;
 }
 
 /* Utility Classes */

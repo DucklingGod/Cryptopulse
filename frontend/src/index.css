@@ -25,3 +25,55 @@
   }
 }
 
+/* Global responsive design for mobile */
+@media (max-width: 900px) {
+  .main-content {
+    padding: 16px 4px;
+  }
+}
+@media (max-width: 600px) {
+  body {
+    font-size: 0.97rem;
+  }
+  .main-content {
+    padding: 8px 2px;
+    min-width: 0;
+  }
+  nav, .navbar, .header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 10px 4px !important;
+    gap: 6px !important;
+  }
+  button, .btn {
+    font-size: 1rem;
+    padding: 10px 12px;
+    min-width: 90px;
+    width: 100%;
+    margin: 6px 0;
+  }
+  table {
+    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+  }
+  th, td {
+    padding: 6px 2px;
+    font-size: 0.85rem;
+  }
+  h1, h2, h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  .app-container, #root {
+    padding: 0;
+  }
+}
+
+/* Utility: make all images responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+

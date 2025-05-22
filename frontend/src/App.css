@@ -17,59 +17,64 @@ body {
 
 /* Light Theme */
 .light-theme {
-  background-color: #ffffff;
-  color: #1a1a1a;
+  color: #222; /* Change this to any color you want */
+  background: #ad1616;
 }
 
 .light-theme .app-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #cfcccc;
+  background: #fff;
+  color: #222; /* Change this to your preferred color */
+  border-bottom: 1px solid #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .light-theme .app-header .logo {
-  color: #007bff;
+  color: #838383;
 }
 
 .light-theme .app-header nav a {
-  color: #333;
+  color: #ff9800; /* Accent color for links */
 }
 
 .light-theme .app-header nav a:hover {
-  color: #007bff;
+  color: #fb8c00;
 }
 
 .light-theme .user-controls input[type="search"] {
-  border: 1px solid #a8a8a8;
-  background-color: #fff;
-  color: #333;
+  background: #fff;
+  color: #181818;
+  border: 1px solid #ffe0b2;
 }
 
 .light-theme .user-controls button {
-  background-color: #007bff;
-  color: white;
+  background: #ff9800;
+  color: #fff;
   border: none;
 }
 
 .light-theme .main-content {
-  background-color: #ffffff;
+  background: #fff;
+  color: #222; /* Change this to any color you want */
 }
 
 .light-theme .dashboard-section {
-  background-color: #1876d4;
-  border: 1px solid #e0e0e0;
+  background: #fff3e6;
+  color: #ff9800;
+  border: 1px solid #ffe0b2;
   margin-bottom: 20px;
   padding: 20px;
   border-radius: 8px;
 }
 
 .light-theme .app-footer {
-  background-color: #f8f9fa;
+  background: #fff;
+  color: #222; /* Change this to any color you want */
   border-top: 1px solid #e0e0e0;
-  color: #555;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .light-theme .app-footer a {
-  color: #007bff;
+  color: #ff9800;
 }
 
 /* Dark Theme */
@@ -79,7 +84,7 @@ body {
 }
 
 .dark-theme .app-header {
-  background-color: #1e1e1e; /* Slightly lighter dark for header */
+  background-color: #000000; /* Slightly lighter dark for header */
   border-bottom: 1px solid #333333;
 }
 
@@ -183,6 +188,66 @@ body {
   text-decoration: none;
 }
 
+/* Dropdown menu styles */
+.dropdown-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.dropdown-toggle {
+  background: #232323;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #232323;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  z-index: 1000;
+  animation: dropdown-fade-in 0.2s;
+}
+.dropdown-menu a {
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 18px;
+  border-bottom: 1px solid #333;
+  transition: background 0.15s;
+}
+.dropdown-menu a:last-child {
+  border-bottom: none;
+}
+.dropdown-menu a:hover {
+  background: #333;
+}
+@keyframes dropdown-fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .dropdown-menu {
+    min-width: 120px;
+    left: 0;
+    right: auto;
+  }
+  .dropdown-toggle {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
 /* Responsive Design (Basic Example) */
 @media (max-width: 768px) {
   .app-header {
@@ -207,5 +272,135 @@ body {
     flex-grow: 1;
     margin-left: 0;
   }
+}
+
+/* Enhanced minimalistic light theme: white main, orange accent */
+.light-theme {
+  background: #ffffff;
+  color: #222; /* Change this to any color you want */
+}
+.light-theme .app-header,
+.light-theme .app-footer {
+  background: #000000;
+  color: #222; /* Change this to any color you want */
+  border-bottom: 1px solid #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.light-theme .logo img {
+  filter: none;
+}
+.light-theme .dropdown-nav .dropdown-toggle {
+  background: #fff3e0;
+  color: #ff9800;
+  border: 1px solid #ffe0b2;
+}
+.light-theme .dropdown-menu {
+  background: #ffffff;
+  border: 1px solid #ffe0b2;
+  box-shadow: 0 4px 16px rgba(255,152,0,0.08);
+}
+.light-theme .dropdown-menu a {
+  color: #181818;
+  border-bottom: 1px solid #fff3e0;
+  transition: background 0.15s, color 0.15s;
+}
+.light-theme .dropdown-menu a:hover {
+  background: #ff9800;
+  color: #fff;
+}
+.light-theme .user-controls input[type="search"] {
+  background: #ffffff;
+  color: #181818;
+  border: 1px solid #ffe0b2;
+}
+.light-theme .risk-factors-section,
+.light-theme .market-trend-section,
+.light-theme .fear-greed-section {
+  background: #ffe0b2;
+  color: #181818;
+  border: 3px solid #ffe0b2;
+}
+.light-theme .trend-value,
+.light-theme .risk-value {
+  color: #ff8000;
+}
+.light-theme .trend-label,
+.light-theme .risk-label {
+  color: #ff9800;
+}
+.light-theme .error {
+  color: #d32f2f;
+}
+.light-theme .dropdown-toggle:focus,
+.light-theme .dropdown-toggle:active {
+  outline: 2px solid #ff9800;
+}
+
+/* Accent orange for buttons */
+.light-theme button,
+.light-theme .btn {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.light-theme button:hover,
+.light-theme .btn:hover {
+  background: #fb8c00;
+}
+
+
+.light-theme .dashboard-section h2 {
+    font-size: 2.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 800;
+    color: #212121;
+}
+
+.dark-theme .dashboard-section h2 {
+    font-size: 2.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 800;
+    color: #ebe8e8;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #ff8f00;
+}
+
+.light-theme .coin-name-price h3 {
+    margin: 0;
+    font-size: 2.5rem;
+    color: #2b2b2b;
+    font-weight: 700;
+}
+
+.dark-theme .coin-name-price h3 {
+    margin: 0;
+    font-size: 2.5rem;
+    color: #ff8f00;
+    font-weight: 700;
+}
+
+.light-theme .coin-name-price p.metric-label {
+    color: #272727;
+}
+
+
+.dark-theme .metric-label {
+    color: #ff8f00;
+}
+
+.light-theme .fundamental-analysis h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #ff8f00;
+    font-weight: 500;
+    font-size: 1.4rem;
 }
 

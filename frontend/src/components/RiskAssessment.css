@@ -24,7 +24,7 @@ h2 {
   margin-top: 0;
   margin-bottom: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: #ff7b00;
 }
 
 .risk-factors-content,
@@ -132,5 +132,49 @@ h2 {
   
   .fear-greed-section {
     grid-column: span 1;
+  }
+}
+
+/* Responsive design for mobile */
+@media (max-width: 600px) {
+  .risk-assessment-container {
+    display: block;
+    padding: 10px;
+  }
+  .risk-factors-section,
+  .market-trend-section,
+  .fear-greed-section {
+    margin-bottom: 24px;
+    padding: 12px 8px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .risk-factors-content,
+  .market-trend-content,
+  .fear-greed-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .trend-detail, .risk-factor {
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  .fear-greed-value {
+    font-size: 2rem;
+  }
+  .fear-greed-label {
+    font-size: 1.1rem;
+  }
+  .fear-greed-scale {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+  }
+  h2 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
   }
 }
