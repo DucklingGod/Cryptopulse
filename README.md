@@ -160,7 +160,7 @@ cryptopulse/
 
 ## Future Enhancements
 
-- Real machine learning model integration for price prediction
+- More robust machine learning model integration for price prediction
 - User authentication and personalized watchlists
 - Portfolio tracking and performance analysis
 - Mobile application version
